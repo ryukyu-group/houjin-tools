@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>損益分岐点・事業計画シミュレーション</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background: #f5f7fa; color: #333; font-size: 14px; }
+  header { background: #1a3a5c; color: #fff; padding: 20px 24px; }
+  header h1 { font-size: 1.35rem; font-weight: 700; }
+  header p { font-size: 0.82rem; opacity: 0.8; margin-top: 5px; }
+  .container { max-width: 960px; margin: 24px auto; padding: 0 16px 40px; }
+  .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 24px; margin-bottom: 20px; }
+  .card h2 { font-size: 1rem; color: #1a3a5c; border-bottom: 2px solid #1a3a5c; padding-bottom: 8px; margin-bottom: 18px; font-weight: 700; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .input-group { display: flex; flex-direction: column; gap: 5px; }
+  .input-group label { font-size: 0.82rem; color: #555; font-weight: 600; }
+  .input-group input, .input-group select { padding: 8px 10px; border: 1.5px solid #d0d5dd; border-radius: 7px; font-size: 0.9rem; font-family: inherit; }
+  .input-group input:focus { outline: none; border-color: #1a3a5c; }
+  .input-group .hint { font-size: 0.75rem; color: #888; }
+  .btn-calc { padding: 11px 28px; background: #1a3a5c; color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 14px; }
+  .btn-calc:hover { background: #2a5a8c; }
+  .subhead { font-size: 0.85rem; font-weight: 700; color: #1a3a5c; margin: 16px 0 10px; border-left: 3px solid #1a3a5c; padding-left: 8px; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .kpi { background: #f8fafc; border-radius: 10px; padding: 14px 16px; }
+  .kpi.blue { background: #dbeafe; }
+  .kpi.green { background: #dcfce7; }
+  .kpi.red { background: #fee2e2; }
+  .kpi .kpi-label { font-size: 0.75rem; color: #555; margin-bottom: 4px; }
+  .kpi .kpi-val { font-size: 1.2rem; font-weight: 700; color: #1a3a5c; }
+  .kpi.green .kpi-val { color: #15803d; }
+  .kpi.red .kpi-val { color: #dc2626; }
+
+  /* SVGグラフ */
+  .chart-wrap { background: #f8fafc; border-radius: 10px; padding: 16px; margin-bottom: 16px; overflow-x: auto; }
+  svg.bep-chart { display: block; min-width: 500px; }
+
+  /* 年次計画表 */
+  table.plan { border-collapse: collapse; width: 100%; font-size: 0.8rem; }
+  table.plan th { background: #1a3a5c; color: #fff; padding: 7px 10px; text-align: right; white-space: nowrap; }
+  table.plan th:first-child { text-align: left; min-width: 130px; }
+  table.plan td { padding: 6px 10px; border-bottom: 1px solid #f0f4f8; text-align: right; white-space: nowrap; }
+  table.plan td:first-child { text-align: left; color: #555; }
+  table.plan tr.sub td { background: #f5f8fc; font-weight: 700; }
+  table.plan tr.profit td { background: #dbeafe; font-weight: 700; color: #1a3a5c; }
+  table.plan td.neg { color: #dc2626; font-weight: 700; }
+  table.plan td.pos { color: #15803d; }
+
+  .note { font-size: 0.75rem; color: #888; margin-top: 14px; line-height: 1.7; }
+  a.back { display: inline-block; margin-bottom: 16px; color: #1a3a5c; font-size: 0.85rem; text-decoration: none; }
+  a.back:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<header>
+  <h1>損益分岐点・事業計画シミュレーション</h1>
+  <p>損益分岐点・安全余裕率を算出し、3〜5年の事業計画を試算します</p>
+</header>
+<div class="container">
+  <a class="back" href="index.html">← ツール一覧に戻る</a>
+
+  <div class="card">
+    <h2>基本設定（初年度）</h2>
+    <div class="subhead">売上・変動費</div>
+    <div class="grid3">
+      <div class="input-group">
+        <label>年間売上高（円）</label>
+        <input type="number" id="uriage" value="30000000" step="500000" min="1">
+      </div>
+      <div class="input-group">
+        <label>変動費率（%）</label>
+        <input type="number" id="hendoritu" value="40" step="1" min="0" max="99">
+        <span class="hint">売上に対する仕入・外注等の割合</span>
+      </div>
+      <div class="input-group">
+        <label>変動費額（円）※率から自動計算</label>
+        <input type="number" id="hendo_kin" value="0" step="100000" min="0">
+        <span class="hint">直接入力する場合は率より優先</span>
+      </div>
+    </div>
+    <div class="subhead">固定費（年間）</div>
+    <div class="grid3">
+      <div class="input-group">
+        <label>人件費（円）</label>
+        <input type="number" id="jinken" value="8000000" step="100000" min="0">
+      </div>
+      <div class="input-group">
+        <label>地代・家賃（円）</label>
+        <input type="number" id="chintai" value="2400000" step="100000" min="0">
+      </div>
+      <div class="input-group">
+        <label>減価償却費（円）</label>
+        <input type="number" id="genkashokaku" value="1000000" step="100000" min="0">
+      </div>
+      <div class="input-group">
+        <label>広告・販促費（円）</label>
+        <input type="number" id="koukoku" value="600000" step="100000" min="0">
+      </div>
+      <div class="input-group">
+        <label>その他固定費（円）</label>
+        <input type="number" id="sonota_kotei" value="1000000" step="100000" min="0">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>成長率設定（2〜5年目）</h2>
+    <div class="grid3">
+      <div class="input-group">
+        <label>売上成長率（年率 %）</label>
+        <input type="number" id="uriage_growth" value="10" step="1">
+      </div>
+      <div class="input-group">
+        <label>変動費率の変化（年率 %pt）</label>
+        <input type="number" id="hendo_change" value="0" step="0.5">
+        <span class="hint">改善なら負の値（例: −1）</span>
+      </div>
+      <div class="input-group">
+        <label>固定費増加率（年率 %）</label>
+        <input type="number" id="kotei_growth" value="3" step="1">
+      </div>
+    </div>
+    <div class="grid2" style="margin-top:14px">
+      <div class="input-group">
+        <label>計画年数</label>
+        <select id="years">
+          <option value="3">3年</option>
+          <option value="5" selected>5年</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn-calc" onclick="calculate()">計算する</button>
+  </div>
+
+  <div class="card" id="resultCard" style="display:none">
+    <h2>損益分岐点分析（初年度）</h2>
+    <div class="kpi-grid" id="kpiGrid"></div>
+
+    <div class="subhead">損益分岐点グラフ</div>
+    <div class="chart-wrap">
+      <svg class="bep-chart" id="bepSvg" height="260"></svg>
+    </div>
+
+    <div class="subhead">年次事業計画</div>
+    <div style="overflow-x:auto">
+      <table class="plan" id="planTable"></table>
+    </div>
+    <p class="note">※ 変動費額に直接入力した場合は率より優先します。成長率は単純年率で複利計算します。本シミュレーションは概算であり、実際の経営判断は税理士・中小企業診断士にご相談ください。</p>
+  </div>
+</div>
+
+<script>
+function calculate() {
+  const uriage1 = parseFloat(document.getElementById('uriage').value) || 0;
+  const hendoRitu = parseFloat(document.getElementById('hendoritu').value) / 100 || 0;
+  const hendoKinDirect = parseFloat(document.getElementById('hendo_kin').value) || 0;
+  const jinken = parseFloat(document.getElementById('jinken').value) || 0;
+  const chintai = parseFloat(document.getElementById('chintai').value) || 0;
+  const genkashokaku = parseFloat(document.getElementById('genkashokaku').value) || 0;
+  const koukoku = parseFloat(document.getElementById('koukoku').value) || 0;
+  const sonotaKotei = parseFloat(document.getElementById('sonota_kotei').value) || 0;
+  const uriageGrowth = parseFloat(document.getElementById('uriage_growth').value) / 100 || 0;
+  const hendoChange = parseFloat(document.getElementById('hendo_change').value) / 100 || 0;
+  const koteiGrowth = parseFloat(document.getElementById('kotei_growth').value) / 100 || 0;
+  const years = parseInt(document.getElementById('years').value) || 5;
+
+  // 初年度
+  const hendoKin1 = hendoKinDirect > 0 ? hendoKinDirect : uriage1 * hendoRitu;
+  const actualHendoRitu1 = uriage1 > 0 ? hendoKin1 / uriage1 : hendoRitu;
+  const kotei1 = jinken + chintai + genkashokaku + koukoku + sonotaKotei;
+  const rieki1 = uriage1 - hendoKin1 - kotei1;
+  const henka = uriage1 - hendoKin1; // 限界利益
+  const henkaRitu = uriage1 > 0 ? henka / uriage1 : 0;
+
+  // 損益分岐点売上高
+  const bep = henkaRitu > 0 ? kotei1 / henkaRitu : 0;
+  const anzenYoyu = uriage1 > 0 ? (uriage1 - bep) / uriage1 * 100 : 0;
+  const roei = henkaRitu * 100;
+
+  const fmt = n => Math.round(n).toLocaleString('ja-JP');
+  const fmtPct = n => n.toFixed(1) + '%';
+
+  // KPI
+  document.getElementById('kpiGrid').innerHTML = `
+    <div class="kpi blue"><div class="kpi-label">損益分岐点売上高</div><div class="kpi-val">${fmt(bep)} 円</div></div>
+    <div class="kpi ${anzenYoyu >= 20 ? 'green' : anzenYoyu >= 0 ? '' : 'red'}">
+      <div class="kpi-label">安全余裕率</div><div class="kpi-val">${fmtPct(anzenYoyu)}</div>
+    </div>
+    <div class="kpi"><div class="kpi-label">限界利益率</div><div class="kpi-val">${fmtPct(roei)}</div></div>
+    <div class="kpi"><div class="kpi-label">限界利益</div><div class="kpi-val">${fmt(henka)} 円</div></div>
+    <div class="kpi"><div class="kpi-label">固定費合計</div><div class="kpi-val">${fmt(kotei1)} 円</div></div>
+    <div class="kpi ${rieki1 >= 0 ? 'green' : 'red'}">
+      <div class="kpi-label">初年度利益</div><div class="kpi-val">${fmt(rieki1)} 円</div>
+    </div>
+  `;
+
+  // BEPグラフ（SVG）
+  drawBEPChart(uriage1, bep, kotei1, henkaRitu, actualHendoRitu1);
+
+  // 年次計画表
+  const planData = [];
+  let u = uriage1, hr = actualHendoRitu1, k = kotei1;
+  for (let y = 1; y <= years; y++) {
+    if (y > 1) {
+      u = u * (1 + uriageGrowth);
+      hr = Math.min(hr + hendoChange, 0.99);
+      k = k * (1 + koteiGrowth);
+    }
+    const hk = u * hr;
+    const heni = u - hk;
+    const rieki = u - hk - k;
+    const bepY = heni / u > 0 ? k / (heni / u) : 0;
+    const ayY = u > 0 ? (u - bepY) / u * 100 : 0;
+    planData.push({ y, u, hk, heni, k, rieki, bepY, ayY });
+  }
+
+  const ths = `<tr><th>項目</th>${planData.map(d=>`<th>${d.y}年目</th>`).join('')}</tr>`;
+  const tableRows = [
+    ['売上高', planData.map(d=>d.u)],
+    ['変動費', planData.map(d=>d.hk)],
+    ['限界利益', planData.map(d=>d.heni), 'sub'],
+    ['固定費', planData.map(d=>d.k)],
+    ['営業利益', planData.map(d=>d.rieki), 'profit'],
+    ['損益分岐点', planData.map(d=>d.bepY)],
+    ['安全余裕率', planData.map(d=>d.ayY), '', true],
+  ];
+
+  const trs = tableRows.map(([label, vals, cls, isPct]) => {
+    const tds = vals.map(v => {
+      const negative = v < 0;
+      const display = isPct ? fmtPct(v) : fmt(v) + ' 円';
+      return `<td class="${negative ? 'neg' : (v > 0 && cls === 'profit' ? 'pos' : '')}">${display}</td>`;
+    }).join('');
+    return `<tr class="${cls || ''}"><td>${label}</td>${tds}</tr>`;
+  }).join('');
+
+  document.getElementById('planTable').innerHTML = `
+    <thead>${ths}</thead>
+    <tbody>${trs}</tbody>`;
+
+  document.getElementById('resultCard').style.display = 'block';
+  document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+function drawBEPChart(uriage, bep, kotei, henkaRitu, hendoRitu) {
+  const W = 600, H = 240;
+  const PAD = { t: 20, r: 20, b: 40, l: 70 };
+  const iW = W - PAD.l - PAD.r;
+  const iH = H - PAD.t - PAD.b;
+
+  // x軸: 0〜売上高*1.3
+  const maxX = uriage * 1.3;
+  // y軸: 0〜売上高*1.3
+  const maxY = uriage * 1.3;
+
+  const sx = x => PAD.l + (x / maxX) * iW;
+  const sy = y => PAD.t + iH - (y / maxY) * iH;
+
+  // 売上線 (0,0) → (maxX, maxX)
+  const sl = `M${sx(0)},${sy(0)} L${sx(maxX)},${sy(Math.min(maxX, maxY))}`;
+  // 固定費線 (0, kotei) → (maxX, kotei)
+  const kl = `M${sx(0)},${sy(kotei)} L${sx(maxX)},${sy(kotei)}`;
+  // 総費用線 (0, kotei) → (maxX, kotei + maxX*hendoRitu)
+  const tcMaxY = kotei + maxX * hendoRitu;
+  const tcl = `M${sx(0)},${sy(kotei)} L${sx(maxX)},${sy(Math.min(tcMaxY, maxY * 1.5))}`;
+
+  // BEP点
+  const bepX = bep, bepY = bep;
+
+  // 軸ラベル
+  const fmt0 = n => (n >= 1000000 ? (n / 1000000).toFixed(0) + 'M' : (n / 10000).toFixed(0) + '万');
+
+  const xTicks = [0, maxX * 0.25, maxX * 0.5, maxX * 0.75, maxX].map(v =>
+    `<text x="${sx(v)}" y="${H - 8}" text-anchor="middle" font-size="10" fill="#888">${fmt0(v)}</text>
+     <line x1="${sx(v)}" y1="${PAD.t}" x2="${sx(v)}" y2="${H - PAD.b}" stroke="#e2e8f0" stroke-width="1"/>`)
+    .join('');
+
+  const yTicks = [0, maxY * 0.25, maxY * 0.5, maxY * 0.75, maxY].map(v =>
+    `<text x="${PAD.l - 6}" y="${sy(v) + 4}" text-anchor="end" font-size="10" fill="#888">${fmt0(v)}</text>
+     <line x1="${PAD.l}" y1="${sy(v)}" x2="${W - PAD.r}" y2="${sy(v)}" stroke="#e2e8f0" stroke-width="1"/>`)
+    .join('');
+
+  const svg = `<svg class="bep-chart" id="bepSvg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+    ${xTicks}${yTicks}
+    <!-- 固定費線 -->
+    <path d="${kl}" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4,3" fill="none"/>
+    <!-- 総費用線 -->
+    <path d="${tcl}" stroke="#f43f5e" stroke-width="2" fill="none"/>
+    <!-- 売上線 -->
+    <path d="${sl}" stroke="#3b82f6" stroke-width="2" fill="none"/>
+    <!-- BEP垂直線 -->
+    <line x1="${sx(bepX)}" y1="${sy(0)}" x2="${sx(bepX)}" y2="${sy(bepY)}" stroke="#1a3a5c" stroke-width="1" stroke-dasharray="3,2"/>
+    <!-- BEP点 -->
+    <circle cx="${sx(bepX)}" cy="${sy(bepY)}" r="5" fill="#1a3a5c"/>
+    <text x="${sx(bepX) + 7}" y="${sy(bepY) - 6}" font-size="11" fill="#1a3a5c" font-weight="bold">BEP</text>
+    <!-- 凡例 -->
+    <line x1="${PAD.l}" y1="12" x2="${PAD.l + 20}" y2="12" stroke="#3b82f6" stroke-width="2"/>
+    <text x="${PAD.l + 24}" y="16" font-size="10" fill="#444">売上高</text>
+    <line x1="${PAD.l + 70}" y1="12" x2="${PAD.l + 90}" y2="12" stroke="#f43f5e" stroke-width="2"/>
+    <text x="${PAD.l + 94}" y="16" font-size="10" fill="#444">総費用</text>
+    <line x1="${PAD.l + 140}" y1="12" x2="${PAD.l + 160}" y2="12" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4,3"/>
+    <text x="${PAD.l + 164}" y="16" font-size="10" fill="#444">固定費</text>
+    <!-- 軸 -->
+    <line x1="${PAD.l}" y1="${PAD.t}" x2="${PAD.l}" y2="${H - PAD.b}" stroke="#aaa" stroke-width="1"/>
+    <line x1="${PAD.l}" y1="${H - PAD.b}" x2="${W - PAD.r}" y2="${H - PAD.b}" stroke="#aaa" stroke-width="1"/>
+    <text x="10" y="${H / 2}" transform="rotate(-90,10,${H/2})" font-size="11" fill="#666" text-anchor="middle">金額（円）</text>
+    <text x="${PAD.l + iW / 2}" y="${H}" font-size="11" fill="#666" text-anchor="middle">売上高（円）</text>
+  </svg>`;
+
+  document.getElementById('bepSvg').outerHTML = svg;
+}
+
+window.addEventListener('DOMContentLoaded', calculate);
+</script>
+</body>
+</html>

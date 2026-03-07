@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>年末調整シミュレーション</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background: #f5f7fa; color: #333; font-size: 14px; }
+  header { background: #1a3a5c; color: #fff; padding: 20px 24px; }
+  header h1 { font-size: 1.35rem; font-weight: 700; }
+  header p { font-size: 0.82rem; opacity: 0.8; margin-top: 5px; }
+  .container { max-width: 860px; margin: 24px auto; padding: 0 16px 40px; }
+  .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 24px; margin-bottom: 20px; }
+  .card h2 { font-size: 1rem; color: #1a3a5c; border-bottom: 2px solid #1a3a5c; padding-bottom: 8px; margin-bottom: 18px; font-weight: 700; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .input-group { display: flex; flex-direction: column; gap: 5px; }
+  .input-group label { font-size: 0.82rem; color: #555; font-weight: 600; }
+  .input-group input, .input-group select { padding: 8px 10px; border: 1.5px solid #d0d5dd; border-radius: 7px; font-size: 0.9rem; font-family: inherit; }
+  .input-group input:focus, .input-group select:focus { outline: none; border-color: #1a3a5c; }
+  .info-box { background: #eef4ff; border-left: 4px solid #1a3a5c; padding: 10px 13px; border-radius: 0 7px 7px 0; font-size: 0.8rem; line-height: 1.6; color: #444; margin: 12px 0; }
+  .btn-calc { padding: 11px 28px; background: #1a3a5c; color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 14px; }
+  .btn-calc:hover { background: #2a5a8c; }
+  .subhead { font-size: 0.85rem; font-weight: 700; color: #1a3a5c; margin: 16px 0 10px; border-left: 3px solid #1a3a5c; padding-left: 8px; }
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .result-item { background: #f8fafc; border-radius: 8px; padding: 12px 16px; }
+  .result-item .r-label { font-size: 0.78rem; color: #666; margin-bottom: 4px; }
+  .result-item .r-value { font-size: 1.25rem; font-weight: 700; color: #1a3a5c; }
+  .result-item.highlight { background: #dbeafe; }
+  .result-item.refund { background: #dcfce7; }
+  .result-item.refund .r-value { color: #15803d; }
+  .result-item.pay { background: #fee2e2; }
+  .result-item.pay .r-value { color: #dc2626; }
+  table.detail { border-collapse: collapse; width: 100%; font-size: 0.82rem; }
+  table.detail th { background: #f0f4f8; color: #444; padding: 7px 10px; text-align: left; font-weight: 600; border-bottom: 1px solid #e2e8f0; }
+  table.detail td { padding: 6px 10px; border-bottom: 1px solid #f0f4f8; }
+  table.detail td:last-child { text-align: right; font-weight: 600; }
+  table.detail tr.total td { background: #eef4ff; font-weight: 700; color: #1a3a5c; }
+  .note { font-size: 0.75rem; color: #888; margin-top: 14px; line-height: 1.7; }
+  a.back { display: inline-block; margin-bottom: 16px; color: #1a3a5c; font-size: 0.85rem; text-decoration: none; }
+  a.back:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<header>
+  <h1>年末調整シミュレーション</h1>
+  <p>給与所得者の年間所得税額を試算し、源泉徴収税額との過不足を計算します</p>
+</header>
+<div class="container">
+  <a class="back" href="index.html">← ツール一覧に戻る</a>
+
+  <div class="card">
+    <h2>給与・源泉徴収</h2>
+    <div class="grid2">
+      <div class="input-group">
+        <label>年間給与収入（税込・円）</label>
+        <input type="number" id="kyuyo" value="6000000" step="100000" min="0">
+      </div>
+      <div class="input-group">
+        <label>年間源泉徴収税額（円）</label>
+        <input type="number" id="gensen" value="250000" step="1000" min="0">
+      </div>
+    </div>
+    <div class="grid2" style="margin-top:14px">
+      <div class="input-group">
+        <label>給与以外の所得（円）</label>
+        <input type="number" id="sonota_shotoku" value="0" step="10000" min="0">
+      </div>
+      <div class="input-group">
+        <label>配偶者の有無</label>
+        <select id="haigusha">
+          <option value="0">なし</option>
+          <option value="1" selected>あり（配偶者控除対象）</option>
+          <option value="2">あり（配偶者特別控除対象）</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>扶養控除</h2>
+    <div class="grid3">
+      <div class="input-group">
+        <label>一般扶養親族（16〜18歳、23〜69歳）</label>
+        <input type="number" id="fuyo_ippan" value="0" min="0" max="10">
+      </div>
+      <div class="input-group">
+        <label>特定扶養親族（19〜22歳）</label>
+        <input type="number" id="fuyo_tokutei" value="0" min="0" max="10">
+      </div>
+      <div class="input-group">
+        <label>老人扶養親族（70歳以上）</label>
+        <input type="number" id="fuyo_roujin" value="0" min="0" max="10">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>各種控除</h2>
+    <div class="subhead">保険料控除</div>
+    <div class="grid3">
+      <div class="input-group">
+        <label>生命保険料控除額（円）</label>
+        <input type="number" id="seimei" value="0" step="1000" min="0" max="120000">
+      </div>
+      <div class="input-group">
+        <label>地震保険料控除額（円）</label>
+        <input type="number" id="jishin" value="0" step="1000" min="0" max="50000">
+      </div>
+      <div class="input-group">
+        <label>社会保険料控除額（円）</label>
+        <input type="number" id="shakai_hoken" value="800000" step="10000" min="0">
+      </div>
+    </div>
+    <div class="subhead">その他控除</div>
+    <div class="grid3">
+      <div class="input-group">
+        <label>小規模企業共済等掛金控除（円）</label>
+        <input type="number" id="shokibo" value="0" step="10000" min="0">
+      </div>
+      <div class="input-group">
+        <label>住宅借入金等特別控除（税額控除・円）</label>
+        <input type="number" id="jutaku" value="0" step="10000" min="0">
+      </div>
+      <div class="input-group">
+        <label>寄附金控除（ふるさと納税等・円）</label>
+        <input type="number" id="kifu" value="0" step="1000" min="0">
+      </div>
+    </div>
+    <div class="subhead">本人情報</div>
+    <div class="grid3">
+      <div class="input-group">
+        <label>障害者控除</label>
+        <select id="shogai">
+          <option value="0" selected>なし</option>
+          <option value="270000">一般障害者（27万円）</option>
+          <option value="400000">特別障害者（40万円）</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>寡婦・ひとり親控除</label>
+        <select id="kawazuke">
+          <option value="0" selected>なし</option>
+          <option value="270000">寡婦（27万円）</option>
+          <option value="350000">ひとり親（35万円）</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>勤労学生控除</label>
+        <select id="gakusei">
+          <option value="0" selected>なし</option>
+          <option value="270000">あり（27万円）</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn-calc" onclick="calculate()">計算する</button>
+  </div>
+
+  <div class="card" id="resultCard" style="display:none">
+    <h2>計算結果</h2>
+    <div class="result-grid" id="resultTop"></div>
+    <div class="subhead">所得・控除の内訳</div>
+    <table class="detail" id="detailTable"></table>
+    <p class="note">※ 本シミュレーションは概算です。実際の年末調整・確定申告は給与所得の源泉徴収票や各証明書をもとに行ってください。住宅ローン控除は初年度確定申告が必要です。</p>
+  </div>
+</div>
+
+<script>
+// 給与所得控除額
+function kyuyoKojo(kyuyo) {
+  if (kyuyo <= 1625000) return 550000;
+  if (kyuyo <= 1800000) return Math.floor(kyuyo * 0.4) - 100000;
+  if (kyuyo <= 3600000) return Math.floor(kyuyo * 0.3) + 80000;
+  if (kyuyo <= 6600000) return Math.floor(kyuyo * 0.2) + 440000;
+  if (kyuyo <= 8500000) return Math.floor(kyuyo * 0.1) + 1100000;
+  return 1950000;
+}
+
+// 所得税率（速算表）
+function calcShotokuZei(taxableIncome) {
+  const brackets = [
+    [1950000, 0.05, 0],
+    [3300000, 0.10, 97500],
+    [6950000, 0.20, 427500],
+    [9000000, 0.23, 636000],
+    [18000000, 0.33, 1536000],
+    [40000000, 0.40, 2796000],
+    [Infinity, 0.45, 4796000],
+  ];
+  if (taxableIncome <= 0) return 0;
+  for (const [limit, rate, deduct] of brackets) {
+    if (taxableIncome <= limit) return Math.floor(taxableIncome * rate) - deduct;
+  }
+}
+
+// 配偶者控除・特別控除（本人所得900万以下を前提）
+function haigushaKojo(type, kyuyoShotoku) {
+  if (type === '0') return 0;
+  if (type === '1') return kyuyoShotoku > 9000000 ? 130000 : 380000; // 配偶者控除
+  // 配偶者特別控除（配偶者収入103〜201万円の平均的な控除額として38万円を簡略適用）
+  return 380000;
+}
+
+function calculate() {
+  const kyuyo = parseFloat(document.getElementById('kyuyo').value) || 0;
+  const gensen = parseFloat(document.getElementById('gensen').value) || 0;
+  const sonotaShotoku = parseFloat(document.getElementById('sonota_shotoku').value) || 0;
+
+  // 給与所得控除
+  const kyuyoKojoAmt = kyuyoKojo(kyuyo);
+  // 給与所得
+  let kyuyoShotoku = kyuyo - kyuyoKojoAmt;
+
+  // 所得金額調整控除（給与850万超で子・障害者がいる場合は省略）
+  // 合計所得
+  const totalShotoku = kyuyoShotoku + sonotaShotoku;
+
+  // 各種控除
+  const shakaiHoken = parseFloat(document.getElementById('shakai_hoken').value) || 0;
+  const seimei = Math.min(parseFloat(document.getElementById('seimei').value) || 0, 120000);
+  const jishin = Math.min(parseFloat(document.getElementById('jishin').value) || 0, 50000);
+  const shokibo = parseFloat(document.getElementById('shokibo').value) || 0;
+  const kifu = parseFloat(document.getElementById('kifu').value) || 0;
+  const shogai = parseInt(document.getElementById('shogai').value) || 0;
+  const kawazuke = parseInt(document.getElementById('kawazuke').value) || 0;
+  const gakusei = parseInt(document.getElementById('gakusei').value) || 0;
+  const jutaku = parseFloat(document.getElementById('jutaku').value) || 0;
+
+  // 扶養控除
+  const fuyoIppan = (parseInt(document.getElementById('fuyo_ippan').value) || 0) * 380000;
+  const fuyoTokutei = (parseInt(document.getElementById('fuyo_tokutei').value) || 0) * 630000;
+  const fuyoRoujin = (parseInt(document.getElementById('fuyo_roujin').value) || 0) * 480000;
+  const fuyoTotal = fuyoIppan + fuyoTokutei + fuyoRoujin;
+
+  // 配偶者控除
+  const haigushaType = document.getElementById('haigusha').value;
+  const haigushaKojoAmt = haigushaKojo(haigushaType, kyuyoShotoku);
+
+  // 基礎控除（合計所得2400万以下で48万円）
+  const kiso = totalShotoku <= 24000000 ? 480000 : 0;
+
+  // 寄付金控除
+  const kifuKojo = Math.max(kifu - 2000, 0);
+
+  // 所得控除合計
+  const kojoTotal = shakaiHoken + seimei + jishin + shokibo + kifuKojo +
+    shogai + kawazuke + gakusei + fuyoTotal + haigushaKojoAmt + kiso;
+
+  // 課税所得
+  const kazeiShotoku = Math.max(Math.floor((totalShotoku - kojoTotal) / 1000) * 1000, 0);
+
+  // 所得税（基準所得税額）
+  let shotokuZei = calcShotokuZei(kazeiShotoku);
+
+  // 住宅ローン控除（税額控除）
+  shotokuZei = Math.max(shotokuZei - jutaku, 0);
+
+  // 復興特別所得税（2.1%）
+  const fukko = Math.floor(shotokuZei * 0.021);
+  const totalZei = shotokuZei + fukko;
+
+  // 過不足
+  const sashihiki = gensen - totalZei;
+
+  const fmt = n => Math.round(n).toLocaleString('ja-JP');
+
+  // 上部サマリー
+  const topDiv = document.getElementById('resultTop');
+  const sashihikiClass = sashihiki >= 0 ? 'refund' : 'pay';
+  const sashihikiLabel = sashihiki >= 0 ? '還付額（還付金）' : '追加納税額';
+  topDiv.innerHTML = `
+    <div class="result-item highlight">
+      <div class="r-label">年間所得税額（復興税込）</div>
+      <div class="r-value">${fmt(totalZei)} 円</div>
+    </div>
+    <div class="result-item ${sashihikiClass}">
+      <div class="r-label">${sashihikiLabel}</div>
+      <div class="r-value">${fmt(Math.abs(sashihiki))} 円</div>
+    </div>
+    <div class="result-item">
+      <div class="r-label">源泉徴収税額（年間）</div>
+      <div class="r-value">${fmt(gensen)} 円</div>
+    </div>
+    <div class="result-item">
+      <div class="r-label">課税所得金額</div>
+      <div class="r-value">${fmt(kazeiShotoku)} 円</div>
+    </div>
+  `;
+
+  // 詳細テーブル
+  const rows = [
+    ['給与収入', kyuyo],
+    ['給与所得控除', -kyuyoKojoAmt],
+    ['給与所得', kyuyoShotoku],
+    ['給与以外の所得', sonotaShotoku],
+    ['合計所得金額', totalShotoku],
+    ['社会保険料控除', -shakaiHoken],
+    ['生命保険料控除', -seimei],
+    ['地震保険料控除', -jishin],
+    ['小規模企業共済等控除', -shokibo],
+    ['寄附金控除', -kifuKojo],
+    ['障害者控除', -shogai],
+    ['寡婦・ひとり親控除', -kawazuke],
+    ['勤労学生控除', -gakusei],
+    ['扶養控除', -fuyoTotal],
+    ['配偶者（特別）控除', -haigushaKojoAmt],
+    ['基礎控除', -kiso],
+    ['所得控除合計', -kojoTotal],
+    ['課税所得金額', kazeiShotoku],
+    ['所得税額', shotokuZei],
+    ['住宅借入金等特別控除', -jutaku],
+    ['復興特別所得税（2.1%）', fukko],
+    ['年間所得税額', totalZei],
+  ];
+
+  const trs = rows.map(([label, val]) => {
+    const isTotal = ['合計所得金額','所得控除合計','課税所得金額','年間所得税額'].includes(label);
+    const display = val === 0 ? '—' : (val < 0 ? `▲${fmt(-val)}` : fmt(val)) + ' 円';
+    return `<tr class="${isTotal ? 'total' : ''}"><td>${label}</td><td>${display}</td></tr>`;
+  }).join('');
+
+  document.getElementById('detailTable').innerHTML = `
+    <thead><tr><th>項目</th><th style="text-align:right">金額</th></tr></thead>
+    <tbody>${trs}</tbody>`;
+
+  document.getElementById('resultCard').style.display = 'block';
+  document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+window.addEventListener('DOMContentLoaded', calculate);
+</script>
+</body>
+</html>

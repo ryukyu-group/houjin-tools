@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>社会保険料シミュレーション</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background: #f5f7fa; color: #333; font-size: 14px; }
+  header { background: #1a3a5c; color: #fff; padding: 20px 24px; }
+  header h1 { font-size: 1.35rem; font-weight: 700; }
+  header p { font-size: 0.82rem; opacity: 0.8; margin-top: 5px; }
+  .container { max-width: 900px; margin: 24px auto; padding: 0 16px 40px; }
+  .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 24px; margin-bottom: 20px; }
+  .card h2 { font-size: 1rem; color: #1a3a5c; border-bottom: 2px solid #1a3a5c; padding-bottom: 8px; margin-bottom: 18px; font-weight: 700; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .input-group { display: flex; flex-direction: column; gap: 5px; }
+  .input-group label { font-size: 0.82rem; color: #555; font-weight: 600; }
+  .input-group input, .input-group select { padding: 9px 11px; border: 1.5px solid #d0d5dd; border-radius: 7px; font-size: 0.95rem; font-family: inherit; }
+  .input-group input:focus, .input-group select:focus { outline: none; border-color: #1a3a5c; }
+  .info-box { background: #eef4ff; border-left: 4px solid #1a3a5c; padding: 10px 13px; border-radius: 0 7px 7px 0; font-size: 0.8rem; line-height: 1.6; color: #444; margin: 12px 0; }
+  .warn-box { background: #fffbeb; border-left: 4px solid #d97706; padding: 10px 13px; border-radius: 0 7px 7px 0; font-size: 0.8rem; line-height: 1.6; color: #444; margin: 12px 0; }
+  .btn-calc { width: 100%; padding: 12px; background: #1a3a5c; color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 14px; }
+  .btn-calc:hover { background: #2a5a8c; }
+  .subhead { font-size: 0.82rem; font-weight: 700; color: #1a3a5c; margin: 16px 0 8px; padding-bottom: 4px; border-bottom: 1px dashed #d0d5dd; }
+
+  .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+  .kpi { border-radius: 9px; padding: 14px; text-align: center; border: 1.5px solid; }
+  .kpi.blue   { border-color: #3b82f6; background: #eff6ff; }
+  .kpi.red    { border-color: #f43f5e; background: #fff1f2; }
+  .kpi.green  { border-color: #22c55e; background: #f0fdf4; }
+  .kpi label  { font-size: 0.75rem; font-weight: 600; color: #555; display: block; margin-bottom: 4px; }
+  .kpi .val   { font-size: 1.1rem; font-weight: 700; }
+  .kpi.blue .val { color: #1d4ed8; }
+  .kpi.red .val  { color: #be123c; }
+  .kpi.green .val { color: #15803d; }
+
+  table.dt { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  table.dt th { background: #1a3a5c; color: #fff; padding: 8px 12px; text-align: center; }
+  table.dt th:first-child { text-align: left; }
+  table.dt td { padding: 7px 12px; border-bottom: 1px solid #e2e8f0; text-align: right; }
+  table.dt td:first-child { text-align: left; color: #555; }
+  table.dt tr.total td { background: #dbeafe; font-weight: 700; color: #1a3a5c; }
+  table.dt tr.section td { background: #f0f4f8; font-weight: 700; color: #1a3a5c; text-align: left !important; }
+  .note { font-size: 0.75rem; color: #888; margin-top: 14px; line-height: 1.7; }
+  @media (max-width: 600px) { .grid2, .grid3, .kpi-row { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>社会保険料シミュレーション</h1>
+  <p>標準報酬月額の算定と健康保険・厚生年金の月額保険料を計算します</p>
+</header>
+<div class="container">
+
+  <div class="card">
+    <h2>算定条件</h2>
+    <div class="grid3">
+      <div class="input-group">
+        <label>都道府県（協会けんぽ）</label>
+        <select id="pref">
+          <option value="tokyo" selected>東京都（9.98% / 11.58%）</option>
+          <option value="osaka">大阪府（10.22% / 11.82%）</option>
+          <option value="kanagawa">神奈川県（9.98% / 11.58%）</option>
+          <option value="aichi">愛知県（9.98% / 11.58%）</option>
+          <option value="other">その他（全国平均 9.98% / 11.58%）</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>年齢区分</label>
+        <select id="age">
+          <option value="young" selected>40歳未満（介護保険なし）</option>
+          <option value="kaigo">40〜64歳（介護保険あり）</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>算定方法</label>
+        <select id="method">
+          <option value="santei" selected>定時決定（4〜6月の平均）</option>
+          <option value="zuiji">随時改定（月変・3ヶ月平均）</option>
+          <option value="direct">報酬月額を直接入力</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="subhead">報酬月額（通勤手当・現物給与含む）</div>
+    <div class="grid3" id="santeiArea">
+      <div class="input-group">
+        <label>4月の報酬月額（円）</label>
+        <input type="number" id="m1" value="350000" step="10000" min="0">
+      </div>
+      <div class="input-group">
+        <label>5月の報酬月額（円）</label>
+        <input type="number" id="m2" value="360000" step="10000" min="0">
+      </div>
+      <div class="input-group">
+        <label>6月の報酬月額（円）</label>
+        <input type="number" id="m3" value="370000" step="10000" min="0">
+      </div>
+    </div>
+    <div id="directArea" style="display:none">
+      <div class="grid3">
+        <div class="input-group">
+          <label>報酬月額（直接入力・円）</label>
+          <input type="number" id="directAmount" value="360000" step="10000" min="0">
+        </div>
+      </div>
+    </div>
+    <div class="info-box">
+      報酬月額には基本給・残業代・通勤手当・役職手当などすべての手当を含めます。<br>
+      定時決定：4〜6月の3ヶ月平均で9月から翌年8月まで適用。随時改定：固定的賃金の変動後3ヶ月平均が2等級以上変動した場合に適用。
+    </div>
+    <button class="btn-calc" onclick="calculate()">計算する</button>
+  </div>
+
+  <div class="card" id="resultCard" style="display:none">
+    <h2>計算結果</h2>
+    <div class="kpi-row" id="kpiRow"></div>
+    <table class="dt" id="detailTable"></table>
+    <div class="warn-box" id="noteBox" style="display:none"></div>
+    <p class="note">
+      ※ 協会けんぽ 東京都 2024年度料率：健保9.98%（40歳未満）/ 11.58%（40歳以上、介護1.60%含む）。<br>
+      ※ 厚生年金保険料率：18.3%（本人・会社各9.15%）。標準報酬月額の上限 650,000円。<br>
+      ※ 実際の保険料は日本年金機構・全国健康保険協会にご確認ください。
+    </p>
+  </div>
+
+  <!-- 標準報酬月額等級表（抜粋） -->
+  <div class="card">
+    <h2>標準報酬月額等級表（厚生年金・抜粋）</h2>
+    <table class="dt">
+      <thead><tr><th>等級</th><th>標準報酬月額</th><th>報酬月額の範囲</th><th>厚生年金保険料（本人）/月</th></tr></thead>
+      <tbody id="gradeTable"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+// 厚生年金等級表
+const NENKIN_GRADES = [
+  [1,88000,'〜93,000'],  [2,98000,'93,000〜101,000'], [3,104000,'101,000〜107,000'],
+  [4,110000,'107,000〜114,000'], [5,118000,'114,000〜122,000'], [6,126000,'122,000〜130,000'],
+  [7,134000,'130,000〜138,000'], [8,142000,'138,000〜146,000'], [9,150000,'146,000〜155,000'],
+  [10,160000,'155,000〜165,000'], [11,170000,'165,000〜175,000'], [12,180000,'175,000〜185,000'],
+  [13,190000,'185,000〜195,000'], [14,200000,'195,000〜210,000'], [15,220000,'210,000〜230,000'],
+  [16,240000,'230,000〜250,000'], [17,260000,'250,000〜270,000'], [18,280000,'270,000〜290,000'],
+  [19,300000,'290,000〜310,000'], [20,320000,'310,000〜330,000'], [21,340000,'330,000〜350,000'],
+  [22,360000,'350,000〜370,000'], [23,380000,'370,000〜395,000'], [24,410000,'395,000〜425,000'],
+  [25,440000,'425,000〜455,000'], [26,470000,'455,000〜485,000'], [27,500000,'485,000〜515,000'],
+  [28,530000,'515,000〜545,000'], [29,560000,'545,000〜575,000'], [30,590000,'575,000〜605,000'],
+  [31,620000,'605,000〜635,000'], [32,650000,'635,000〜'],
+];
+
+// 健保等級（上限1,390,000）は厚生年金と同等上位まで
+function getNenkinGrade(hoshu) {
+  for(const [g,s,r] of NENKIN_GRADES) {
+    const next = NENKIN_GRADES[NENKIN_GRADES.indexOf(NENKIN_GRADES.find(x=>x[0]===g))+1];
+    if(!next || hoshu < next[1]) return {grade:g, hyojun:s, range:r};
+  }
+  return {grade:32, hyojun:650000, range:'635,000〜'};
+}
+
+function getKenpoHyojun(hoshu) {
+  // 健保は上限1,390,000まで（等級50）。ここではざっくり報酬月額そのまま（上限だけ適用）
+  return Math.min(hoshu, 1390000);
+}
+
+const RATES = {
+  tokyo:     {young:0.0998, kaigo:0.1158},
+  osaka:     {young:0.1022, kaigo:0.1182},
+  kanagawa:  {young:0.0998, kaigo:0.1158},
+  aichi:     {young:0.0998, kaigo:0.1158},
+  other:     {young:0.0998, kaigo:0.1158},
+};
+
+function fmt(n){return Math.round(n).toLocaleString('ja-JP')+'円';}
+
+document.getElementById('method').addEventListener('change', function(){
+  const v = this.value;
+  document.getElementById('santeiArea').style.display = v==='direct'?'none':'grid';
+  document.getElementById('directArea').style.display = v==='direct'?'block':'none';
+});
+
+function calculate(){
+  const pref    = document.getElementById('pref').value;
+  const age     = document.getElementById('age').value;
+  const method  = document.getElementById('method').value;
+  const isKaigo = age==='kaigo';
+  const rates   = RATES[pref]||RATES.other;
+  const kenpoRate = isKaigo ? rates.kaigo : rates.young;
+
+  let hoshu;
+  if(method==='direct'){
+    hoshu = parseFloat(document.getElementById('directAmount').value)||0;
+  } else {
+    const m1 = parseFloat(document.getElementById('m1').value)||0;
+    const m2 = parseFloat(document.getElementById('m2').value)||0;
+    const m3 = parseFloat(document.getElementById('m3').value)||0;
+    hoshu = Math.round((m1+m2+m3)/3);
+  }
+
+  // 標準報酬月額（厚生年金ベース）
+  const {grade, hyojun} = getNenkinGrade(hoshu);
+  const kenpoHyojun = Math.min(hoshu, 1390000); // 健保は実際はより細かい等級
+
+  // 保険料
+  const kenpoKojin = Math.round(kenpoHyojun * kenpoRate / 2);
+  const kenpoHojin = Math.round(kenpoHyojun * kenpoRate / 2);
+  const nenkinKojin = Math.round(hyojun * 0.0915);
+  const nenkinHojin = Math.round(hyojun * 0.0915);
+  const totalKojin  = kenpoKojin + nenkinKojin;
+  const totalHojin  = kenpoHojin + nenkinHojin;
+  const totalBoth   = totalKojin + totalHojin;
+
+  document.getElementById('kpiRow').innerHTML=`
+    <div class="kpi blue"><label>標準報酬月額（厚生年金）</label><div class="val">${fmt(hyojun)}</div><div style="font-size:0.72rem;color:#888">第${grade}等級</div></div>
+    <div class="kpi red"><label>本人負担 合計</label><div class="val">${fmt(totalKojin)}/月</div><div style="font-size:0.72rem;color:#888">年額 ${fmt(totalKojin*12)}</div></div>
+    <div class="kpi green"><label>会社負担 合計</label><div class="val">${fmt(totalHojin)}/月</div><div style="font-size:0.72rem;color:#888">年額 ${fmt(totalHojin*12)}</div></div>`;
+
+  document.getElementById('detailTable').innerHTML=`
+    <thead><tr><th>保険の種類</th><th>標準報酬月額</th><th>料率（合計）</th><th>本人負担</th><th>会社負担</th><th>合計（月額）</th></tr></thead>
+    <tbody>
+      <tr><td>健康保険${isKaigo?'（介護保険含む）':''}</td><td>${fmt(kenpoHyojun)}</td><td>${(kenpoRate*100).toFixed(2)}%</td><td>${fmt(kenpoKojin)}</td><td>${fmt(kenpoHojin)}</td><td>${fmt(kenpoKojin+kenpoHojin)}</td></tr>
+      <tr><td>厚生年金保険</td><td>${fmt(hyojun)}</td><td>18.30%</td><td>${fmt(nenkinKojin)}</td><td>${fmt(nenkinHojin)}</td><td>${fmt(nenkinKojin+nenkinHojin)}</td></tr>
+      <tr class="total"><td>合計</td><td>—</td><td>—</td><td>${fmt(totalKojin)}</td><td>${fmt(totalHojin)}</td><td>${fmt(totalBoth)}</td></tr>
+      <tr class="total"><td>年額</td><td>—</td><td>—</td><td>${fmt(totalKojin*12)}</td><td>${fmt(totalHojin*12)}</td><td>${fmt(totalBoth*12)}</td></tr>
+    </tbody>`;
+
+  document.getElementById('resultCard').style.display='block';
+  document.getElementById('resultCard').scrollIntoView({behavior:'smooth'});
+}
+
+// 等級表を生成
+window.addEventListener('DOMContentLoaded',()=>{
+  const tbody = document.getElementById('gradeTable');
+  NENKIN_GRADES.forEach(([g,s,r])=>{
+    const kojin = Math.round(s*0.0915);
+    tbody.innerHTML += `<tr><td>${g}等級</td><td>${s.toLocaleString()}円</td><td>${r}円</td><td>${kojin.toLocaleString()}円</td></tr>`;
+  });
+  calculate();
+});
+</script>
+</body>
+</html>

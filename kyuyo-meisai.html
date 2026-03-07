@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>給与明細書テンプレート</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background: #f5f7fa; color: #333; font-size: 14px; }
+  header { background: #1a3a5c; color: #fff; padding: 20px 24px; }
+  header h1 { font-size: 1.35rem; font-weight: 700; }
+  header p { font-size: 0.82rem; opacity: 0.8; margin-top: 5px; }
+  .container { max-width: 900px; margin: 24px auto; padding: 0 16px 40px; }
+  .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 24px; margin-bottom: 20px; }
+  .card h2 { font-size: 1rem; color: #1a3a5c; border-bottom: 2px solid #1a3a5c; padding-bottom: 8px; margin-bottom: 18px; font-weight: 700; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .input-group { display: flex; flex-direction: column; gap: 5px; }
+  .input-group label { font-size: 0.82rem; color: #555; font-weight: 600; }
+  .input-group input, .input-group select { padding: 8px 10px; border: 1.5px solid #d0d5dd; border-radius: 7px; font-size: 0.9rem; font-family: inherit; }
+  .input-group input:focus { outline: none; border-color: #1a3a5c; }
+  .subhead { font-size: 0.85rem; font-weight: 700; color: #1a3a5c; margin: 16px 0 10px; border-left: 3px solid #1a3a5c; padding-left: 8px; }
+  .btns { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+  .btn-calc { padding: 10px 24px; background: #1a3a5c; color: #fff; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+  .btn-calc:hover { background: #2a5a8c; }
+  .btn-print { padding: 10px 24px; background: #15803d; color: #fff; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 700; cursor: pointer; }
+  .btn-print:hover { background: #166534; }
+  a.back { display: inline-block; margin-bottom: 16px; color: #1a3a5c; font-size: 0.85rem; text-decoration: none; }
+  a.back:hover { text-decoration: underline; }
+
+  /* 給与明細書スタイル */
+  #meisaiWrap { display: none; }
+  .meisai { background: #fff; border: 2px solid #1a3a5c; border-radius: 4px; padding: 24px; max-width: 780px; margin: 0 auto; }
+  .meisai-title { text-align: center; font-size: 1.3rem; font-weight: 700; letter-spacing: 0.1em; color: #1a3a5c; margin-bottom: 16px; }
+  .meisai-info { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; font-size: 0.85rem; }
+  .meisai-info .info-row { display: flex; gap: 6px; }
+  .meisai-info .info-label { color: #666; min-width: 80px; }
+  .meisai-info .info-val { font-weight: 600; }
+  .meisai-section { margin-bottom: 12px; }
+  .meisai-section-title { background: #1a3a5c; color: #fff; font-size: 0.8rem; font-weight: 700; padding: 4px 10px; }
+  .meisai-grid { display: grid; gap: 0; border-left: 1px solid #d0d5dd; border-top: 1px solid #d0d5dd; }
+  .meisai-grid.col2 { grid-template-columns: repeat(2, 1fr); }
+  .meisai-grid.col3 { grid-template-columns: repeat(3, 1fr); }
+  .meisai-grid.col4 { grid-template-columns: repeat(4, 1fr); }
+  .meisai-item { border-right: 1px solid #d0d5dd; border-bottom: 1px solid #d0d5dd; padding: 5px 8px; }
+  .meisai-item .m-label { font-size: 0.72rem; color: #666; }
+  .meisai-item .m-val { font-size: 0.88rem; font-weight: 600; text-align: right; }
+  .meisai-item .m-val.neg { color: #dc2626; }
+  .meisai-total-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border: 2px solid #1a3a5c; margin-top: 12px; border-radius: 4px; overflow: hidden; }
+  .meisai-total-item { padding: 8px 12px; border-right: 1px solid #1a3a5c; }
+  .meisai-total-item:last-child { border-right: none; }
+  .meisai-total-item .t-label { font-size: 0.75rem; color: #666; }
+  .meisai-total-item .t-val { font-size: 1rem; font-weight: 700; color: #1a3a5c; text-align: right; }
+  .meisai-total-item.shikyu .t-val { color: #15803d; font-size: 1.15rem; }
+  .seal-area { display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px; }
+  .seal-box { border: 1px solid #aaa; border-radius: 4px; padding: 4px 8px; text-align: center; font-size: 0.72rem; color: #888; }
+  .seal-box .seal-inner { width: 40px; height: 40px; border: 1px solid #aaa; margin: 4px auto; border-radius: 50%; }
+
+  @media print {
+    body { background: #fff; }
+    header, .container > .card:not(#previewCard), a.back { display: none !important; }
+    #previewCard { box-shadow: none; padding: 0; }
+    #meisaiWrap { display: block !important; }
+    .btns { display: none; }
+    .meisai { border: 2px solid #000; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>給与明細書テンプレート</h1>
+  <p>給与情報を入力して給与明細書を作成・印刷できます</p>
+</header>
+<div class="container">
+  <a class="back" href="index.html">← ツール一覧に戻る</a>
+
+  <div class="card">
+    <h2>会社・従業員情報</h2>
+    <div class="grid2">
+      <div class="input-group">
+        <label>会社名</label>
+        <input type="text" id="kaisya" value="株式会社〇〇" placeholder="会社名">
+      </div>
+      <div class="input-group">
+        <label>従業員氏名</label>
+        <input type="text" id="name" value="山田 太郎" placeholder="氏名">
+      </div>
+      <div class="input-group">
+        <label>部署</label>
+        <input type="text" id="busho" value="" placeholder="営業部">
+      </div>
+      <div class="input-group">
+        <label>支給年月</label>
+        <input type="month" id="tsuki" value="">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>支給項目</h2>
+    <div class="grid3">
+      <div class="input-group">
+        <label>基本給（円）</label>
+        <input type="number" id="kihon" value="300000" step="1000" min="0">
+      </div>
+      <div class="input-group">
+        <label>役職手当（円）</label>
+        <input type="number" id="yakushoku" value="0" step="1000" min="0">
+      </div>
+      <div class="input-group">
+        <label>住宅手当（円）</label>
+        <input type="number" id="jutaku" value="0" step="1000" min="0">
+      </div>
+      <div class="input-group">
+        <label>通勤手当（円）</label>
+        <input type="number" id="tsukinkoteate" value="10000" step="1000" min="0">
+      </div>
+      <div class="input-group">
+        <label>時間外手当（円）</label>
+        <input type="number" id="zangyo" value="0" step="1000" min="0">
+      </div>
+      <div class="input-group">
+        <label>その他手当（円）</label>
+        <input type="number" id="sonota_shikyu" value="0" step="1000" min="0">
+      </div>
+    </div>
+    <div class="subhead">勤怠</div>
+    <div class="grid3">
+      <div class="input-group">
+        <label>所定労働日数（日）</label>
+        <input type="number" id="soteiroudo" value="20" step="1" min="0">
+      </div>
+      <div class="input-group">
+        <label>出勤日数（日）</label>
+        <input type="number" id="shukkin" value="20" step="1" min="0">
+      </div>
+      <div class="input-group">
+        <label>時間外時間（時間）</label>
+        <input type="number" id="zangyoJikan" value="0" step="0.5" min="0">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>控除項目</h2>
+    <div class="grid3">
+      <div class="input-group">
+        <label>健康保険料（円）</label>
+        <input type="number" id="kenpo" value="15000" step="100" min="0">
+      </div>
+      <div class="input-group">
+        <label>厚生年金保険料（円）</label>
+        <input type="number" id="nenkin" value="27450" step="100" min="0">
+      </div>
+      <div class="input-group">
+        <label>雇用保険料（円）</label>
+        <input type="number" id="koyo" value="900" step="100" min="0">
+      </div>
+      <div class="input-group">
+        <label>介護保険料（円）</label>
+        <input type="number" id="kaigo" value="0" step="100" min="0">
+      </div>
+      <div class="input-group">
+        <label>所得税（源泉徴収・円）</label>
+        <input type="number" id="shotokuZei" value="8000" step="100" min="0">
+      </div>
+      <div class="input-group">
+        <label>住民税（円）</label>
+        <input type="number" id="juminZei" value="15000" step="100" min="0">
+      </div>
+      <div class="input-group">
+        <label>その他控除（円）</label>
+        <input type="number" id="sonota_kojo" value="0" step="1000" min="0">
+      </div>
+    </div>
+    <div class="btns">
+      <button class="btn-calc" onclick="generate()">明細書を作成</button>
+      <button class="btn-print" onclick="window.print()">印刷する</button>
+    </div>
+  </div>
+
+  <div class="card" id="previewCard" style="display:none">
+    <h2>給与明細書プレビュー</h2>
+    <div class="btns">
+      <button class="btn-print" onclick="window.print()">印刷する</button>
+    </div>
+    <div id="meisaiWrap" style="margin-top:16px">
+      <div class="meisai" id="meisai"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+function fmt(n) { return Math.round(n).toLocaleString('ja-JP'); }
+
+function generate() {
+  const kaisya = document.getElementById('kaisya').value || '　';
+  const name = document.getElementById('name').value || '　';
+  const busho = document.getElementById('busho').value || '　';
+  const tsukiVal = document.getElementById('tsuki').value;
+  const tsuki = tsukiVal ? tsukiVal.replace('-', '年') + '月分' : '　　年　月分';
+
+  // 支給
+  const kihon = parseFloat(document.getElementById('kihon').value) || 0;
+  const yakushoku = parseFloat(document.getElementById('yakushoku').value) || 0;
+  const jutaku = parseFloat(document.getElementById('jutaku').value) || 0;
+  const tsukin = parseFloat(document.getElementById('tsukinkoteate').value) || 0;
+  const zangyo = parseFloat(document.getElementById('zangyo').value) || 0;
+  const sonotaShikyu = parseFloat(document.getElementById('sonota_shikyu').value) || 0;
+  const shikyuTotal = kihon + yakushoku + jutaku + tsukin + zangyo + sonotaShikyu;
+
+  // 控除
+  const kenpo = parseFloat(document.getElementById('kenpo').value) || 0;
+  const nenkin = parseFloat(document.getElementById('nenkin').value) || 0;
+  const koyo = parseFloat(document.getElementById('koyo').value) || 0;
+  const kaigo = parseFloat(document.getElementById('kaigo').value) || 0;
+  const shotokuZei = parseFloat(document.getElementById('shotokuZei').value) || 0;
+  const juminZei = parseFloat(document.getElementById('juminZei').value) || 0;
+  const sonotaKojo = parseFloat(document.getElementById('sonota_kojo').value) || 0;
+  const kojoTotal = kenpo + nenkin + koyo + kaigo + shotokuZei + juminZei + sonotaKojo;
+
+  // 差引支給額
+  const shikyu = shikyuTotal - kojoTotal;
+
+  // 勤怠
+  const sotei = document.getElementById('soteiroudo').value || '—';
+  const shukkin = document.getElementById('shukkin').value || '—';
+  const zangyoH = document.getElementById('zangyoJikan').value || '0';
+
+  const mi = (label, val, neg) => `
+    <div class="meisai-item">
+      <div class="m-label">${label}</div>
+      <div class="m-val${neg?' neg':''}">${val === 0 ? '—' : fmt(val)}</div>
+    </div>`;
+
+  const html = `
+    <div class="meisai-title">給 与 明 細 書</div>
+    <div class="meisai-info">
+      <div>
+        <div class="info-row"><span class="info-label">会社名</span><span class="info-val">${kaisya}</span></div>
+        <div class="info-row"><span class="info-label">部署</span><span class="info-val">${busho}</span></div>
+      </div>
+      <div>
+        <div class="info-row"><span class="info-label">氏名</span><span class="info-val">${name} 様</span></div>
+        <div class="info-row"><span class="info-label">支給月</span><span class="info-val">${tsuki}</span></div>
+      </div>
+    </div>
+
+    <div class="meisai-section">
+      <div class="meisai-section-title">勤怠</div>
+      <div class="meisai-grid col4">
+        <div class="meisai-item"><div class="m-label">所定労働日数</div><div class="m-val">${sotei} 日</div></div>
+        <div class="meisai-item"><div class="m-label">出勤日数</div><div class="m-val">${shukkin} 日</div></div>
+        <div class="meisai-item"><div class="m-label">時間外時間</div><div class="m-val">${zangyoH} 時間</div></div>
+        <div class="meisai-item"><div class="m-label">欠勤日数</div><div class="m-val">—</div></div>
+      </div>
+    </div>
+
+    <div class="meisai-section">
+      <div class="meisai-section-title">支給</div>
+      <div class="meisai-grid col3">
+        ${mi('基本給', kihon)}
+        ${mi('役職手当', yakushoku)}
+        ${mi('住宅手当', jutaku)}
+        ${mi('通勤手当', tsukin)}
+        ${mi('時間外手当', zangyo)}
+        ${mi('その他手当', sonotaShikyu)}
+      </div>
+    </div>
+
+    <div class="meisai-section">
+      <div class="meisai-section-title">控除</div>
+      <div class="meisai-grid col4">
+        ${mi('健康保険料', kenpo)}
+        ${mi('介護保険料', kaigo)}
+        ${mi('厚生年金保険料', nenkin)}
+        ${mi('雇用保険料', koyo)}
+        ${mi('所得税', shotokuZei)}
+        ${mi('住民税', juminZei)}
+        ${mi('その他控除', sonotaKojo)}
+        <div class="meisai-item"><div class="m-label"></div><div class="m-val"></div></div>
+      </div>
+    </div>
+
+    <div class="meisai-total-row">
+      <div class="meisai-total-item">
+        <div class="t-label">支給合計</div>
+        <div class="t-val">${fmt(shikyuTotal)} 円</div>
+      </div>
+      <div class="meisai-total-item">
+        <div class="t-label">控除合計</div>
+        <div class="t-val">${fmt(kojoTotal)} 円</div>
+      </div>
+      <div class="meisai-total-item shikyu">
+        <div class="t-label">差引支給額</div>
+        <div class="t-val">${fmt(shikyu)} 円</div>
+      </div>
+      <div class="meisai-total-item">
+        <div class="t-label">振込金額</div>
+        <div class="t-val">${fmt(shikyu)} 円</div>
+      </div>
+    </div>
+
+    <div class="seal-area">
+      <div class="seal-box">確認<div class="seal-inner"></div></div>
+      <div class="seal-box">承認<div class="seal-inner"></div></div>
+      <div class="seal-box">経理<div class="seal-inner"></div></div>
+    </div>
+  `;
+
+  document.getElementById('meisai').innerHTML = html;
+  document.getElementById('meisaiWrap').style.display = 'block';
+  document.getElementById('previewCard').style.display = 'block';
+  document.getElementById('previewCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+// 支給年月のデフォルト設定
+window.addEventListener('DOMContentLoaded', () => {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  document.getElementById('tsuki').value = `${y}-${m}`;
+});
+</script>
+</body>
+</html>
