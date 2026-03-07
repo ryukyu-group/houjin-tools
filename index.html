@@ -10,38 +10,86 @@
   header { background: #1a3a5c; color: #fff; padding: 24px; text-align: center; }
   header h1 { font-size: 1.5rem; font-weight: 700; }
   header p { font-size: 0.85rem; opacity: 0.8; margin-top: 6px; }
-  .container { max-width: 800px; margin: 40px auto; padding: 0 16px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+  .container { max-width: 900px; margin: 40px auto; padding: 0 16px 60px; }
+  .section-title { font-size: 0.8rem; font-weight: 700; color: #1a3a5c; text-transform: uppercase; letter-spacing: 0.05em; margin: 32px 0 12px; padding-bottom: 6px; border-bottom: 1px solid #e2e8f0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
   .card {
-    background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-    padding: 24px; text-decoration: none; color: #333; transition: transform 0.2s, box-shadow 0.2s;
+    background: #fff; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+    padding: 22px; text-decoration: none; color: #333; transition: transform 0.18s, box-shadow 0.18s;
+    display: block;
   }
   .card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
-  .card .icon { font-size: 2rem; margin-bottom: 12px; }
-  .card h2 { font-size: 1.05rem; color: #1a3a5c; margin-bottom: 8px; }
-  .card p { font-size: 0.82rem; color: #666; line-height: 1.6; }
-  footer { text-align: center; color: #aaa; font-size: 0.75rem; margin-top: 48px; padding-bottom: 24px; }
+  .card .icon { font-size: 1.8rem; margin-bottom: 10px; }
+  .card h2 { font-size: 0.98rem; color: #1a3a5c; margin-bottom: 6px; font-weight: 700; }
+  .card p { font-size: 0.79rem; color: #666; line-height: 1.6; }
+  .card .tag { display: inline-block; background: #eef4ff; color: #1a3a5c; font-size: 0.7rem; padding: 2px 7px; border-radius: 4px; margin-top: 8px; font-weight: 600; }
+  footer { text-align: center; color: #aaa; font-size: 0.75rem; padding: 16px; }
 </style>
 </head>
 <body>
 <header>
   <h1>税務・経営シミュレーション</h1>
-  <p>法人の税務・経営判断をサポートする無料ツール集</p>
+  <p>法人・個人事業主の税務・経営判断をサポートする無料ツール集</p>
 </header>
 <div class="container">
+
+  <div class="section-title">法人税・事業税</div>
   <div class="grid">
     <a class="card" href="houjin-zei-sim.html">
       <div class="icon">🏢</div>
       <h2>法人税シミュレーション</h2>
-      <p>法人税・地方法人税・事業税・住民税を都道府県別に計算。4プランの税負担を比較できます。</p>
+      <p>法人税・地方法人税・事業税・住民税を都道府県別に計算。4プランの税負担を比較。</p>
+      <span class="tag">都道府県対応</span>
     </a>
+    <a class="card" href="hojinka-sim.html">
+      <div class="icon">🔄</div>
+      <h2>法人化シミュレーション</h2>
+      <p>個人事業主のまま vs 法人化した場合の税・社会保険負担を比較。法人化のメリットを試算。</p>
+      <span class="tag">個人vs法人</span>
+    </a>
+  </div>
+
+  <div class="section-title">役員報酬・給与</div>
+  <div class="grid">
     <a class="card" href="yakuin-hoshu-sim.html">
       <div class="icon">💼</div>
       <h2>役員報酬シミュレーション</h2>
-      <p>役員報酬の金額別に法人税等と個人税等・社会保険料の合計コストを比較。最適な報酬額を検討できます。</p>
+      <p>役員報酬の金額別に法人税等・個人税等・社会保険料の合計コストを比較。最適な報酬額を検討。</p>
+      <span class="tag">社会保険込み</span>
     </a>
   </div>
+
+  <div class="section-title">消費税</div>
+  <div class="grid">
+    <a class="card" href="shouhizei-sim.html">
+      <div class="icon">🧾</div>
+      <h2>消費税シミュレーション</h2>
+      <p>本則課税と簡易課税の納税額を比較し、有利な課税方式を判定。2割特例にも対応。</p>
+      <span class="tag">2割特例対応</span>
+    </a>
+  </div>
+
+  <div class="section-title">資金・借入</div>
+  <div class="grid">
+    <a class="card" href="kariire-sim.html">
+      <div class="icon">🏦</div>
+      <h2>借入返済シミュレーション</h2>
+      <p>元利均等・元金均等を比較。総支払利息・返済スケジュールを一覧表示。据置・ボーナス返済にも対応。</p>
+      <span class="tag">スケジュール付</span>
+    </a>
+  </div>
+
+  <div class="section-title">税金（個人）</div>
+  <div class="grid">
+    <a class="card" href="zouyo-sim.html">
+      <div class="icon">🎁</div>
+      <h2>贈与税シミュレーション</h2>
+      <p>暦年課税・相続時精算課税の贈与税額を計算。特例税率・一般税率の税率表付き。</p>
+      <span class="tag">2024年改正対応</span>
+    </a>
+  </div>
+
 </div>
-<footer>参考値です。実際の税額は税理士にご確認ください。</footer>
+<footer>参考値です。実際の税額・社会保険料は税理士・社労士にご確認ください。</footer>
 </body>
 </html>

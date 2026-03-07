@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>借入返済シミュレーション</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background: #f5f7fa; color: #333; font-size: 14px; }
+  header { background: #1a3a5c; color: #fff; padding: 20px 24px; }
+  header h1 { font-size: 1.35rem; font-weight: 700; }
+  header p { font-size: 0.82rem; opacity: 0.8; margin-top: 5px; }
+  .container { max-width: 960px; margin: 24px auto; padding: 0 16px 40px; }
+  .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 24px; margin-bottom: 20px; }
+  .card h2 { font-size: 1rem; color: #1a3a5c; border-bottom: 2px solid #1a3a5c; padding-bottom: 8px; margin-bottom: 18px; font-weight: 700; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .input-group { display: flex; flex-direction: column; gap: 6px; }
+  .input-group label { font-size: 0.82rem; color: #555; font-weight: 600; }
+  .input-group input, .input-group select { padding: 9px 11px; border: 1.5px solid #d0d5dd; border-radius: 7px; font-size: 0.95rem; font-family: inherit; }
+  .input-group input:focus, .input-group select:focus { outline: none; border-color: #1a3a5c; }
+  .btn-calc { width: 100%; padding: 13px; background: #1a3a5c; color: #fff; border: none; border-radius: 8px; font-size: 1.05rem; font-weight: 700; cursor: pointer; transition: background 0.2s; margin-top: 16px; }
+  .btn-calc:hover { background: #2a5a8c; }
+
+  /* サマリーカード */
+  .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+  .summary-box { border-radius: 10px; padding: 16px 18px; }
+  .summary-box.blue  { background: #eff6ff; border: 1.5px solid #3b82f6; }
+  .summary-box.green { background: #f0fdf4; border: 1.5px solid #22c55e; }
+  .summary-box.red   { background: #fff1f2; border: 1.5px solid #f43f5e; }
+  .summary-box label { font-size: 0.78rem; font-weight: 600; color: #555; display: block; margin-bottom: 4px; }
+  .summary-box .val  { font-size: 1.3rem; font-weight: 700; }
+  .summary-box.blue .val  { color: #1d4ed8; }
+  .summary-box.green .val { color: #15803d; }
+  .summary-box.red .val   { color: #be123c; }
+  .summary-box small { font-size: 0.75rem; color: #888; }
+
+  /* 比較表 */
+  .cmp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .cmp-box { border-radius: 9px; padding: 18px; }
+  .cmp-box.kinri { background: #eff6ff; border: 2px solid #3b82f6; }
+  .cmp-box.genkin { background: #f0fdf4; border: 2px solid #22c55e; }
+  .cmp-box h3 { font-size: 0.9rem; font-weight: 700; margin-bottom: 10px; }
+  .cmp-box h3.kinri { color: #1d4ed8; }
+  .cmp-box h3.genkin { color: #15803d; }
+  .cmp-row { display: flex; justify-content: space-between; font-size: 0.85rem; padding: 4px 0; border-bottom: 1px solid rgba(0,0,0,0.06); }
+  .cmp-row:last-child { border-bottom: none; font-weight: 700; }
+
+  /* 返済スケジュール */
+  .schedule-toggle { background: none; border: 1.5px solid #1a3a5c; color: #1a3a5c; border-radius: 7px; padding: 7px 16px; font-size: 0.85rem; font-weight: 600; cursor: pointer; margin-bottom: 14px; }
+  .schedule-toggle:hover { background: #f0f4f8; }
+  table.stable { width: 100%; border-collapse: collapse; font-size: 0.82rem; min-width: 520px; }
+  table.stable thead th { background: #1a3a5c; color: #fff; padding: 8px 10px; text-align: right; white-space: nowrap; }
+  table.stable thead th:first-child { text-align: left; }
+  table.stable tbody td { padding: 6px 10px; border-bottom: 1px solid #f0f4f8; text-align: right; white-space: nowrap; }
+  table.stable tbody td:first-child { text-align: left; color: #555; }
+  table.stable tbody tr:hover { background: #f8fafc; }
+  table.stable tfoot td { background: #f0f4f8; font-weight: 700; padding: 8px 10px; text-align: right; }
+  table.stable tfoot td:first-child { text-align: left; }
+  .scroll-wrap { overflow-x: auto; }
+  .note { font-size: 0.75rem; color: #888; margin-top: 14px; line-height: 1.7; }
+
+  /* グラフ風バー */
+  .bar-wrap { margin: 16px 0; }
+  .bar-label { font-size: 0.78rem; color: #555; margin-bottom: 4px; font-weight: 600; }
+  .bar-bg { background: #e2e8f0; border-radius: 4px; height: 18px; position: relative; overflow: hidden; }
+  .bar-fill-p { background: #3b82f6; height: 100%; border-radius: 4px 0 0 4px; }
+  .bar-fill-i { background: #f43f5e; height: 100%; border-radius: 0 4px 4px 0; position: absolute; top: 0; }
+  .bar-legend { display: flex; gap: 16px; font-size: 0.75rem; color: #555; margin-top: 5px; }
+  .bar-legend span::before { content: '■ '; }
+  .bar-legend span.p::before { color: #3b82f6; }
+  .bar-legend span.i::before { color: #f43f5e; }
+
+  @media (max-width: 600px) {
+    .grid2, .grid3, .summary-grid, .cmp-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>借入返済シミュレーション</h1>
+  <p>元利均等・元金均等それぞれの返済スケジュールと総支払利息を比較します</p>
+</header>
+
+<div class="container">
+
+  <div class="card">
+    <h2>借入条件</h2>
+    <div class="grid3">
+      <div class="input-group">
+        <label>借入金額（円）</label>
+        <input type="number" id="gankin" value="10000000" step="100000" min="1">
+      </div>
+      <div class="input-group">
+        <label>年利（%）</label>
+        <input type="number" id="kinri" value="2.0" step="0.1" min="0" max="50">
+      </div>
+      <div class="input-group">
+        <label>返済期間（年）</label>
+        <input type="number" id="kikan" value="5" step="1" min="1" max="35">
+      </div>
+      <div class="input-group">
+        <label>据置期間（元金返済猶予・月）</label>
+        <input type="number" id="suioki" value="0" step="1" min="0" max="24">
+      </div>
+      <div class="input-group">
+        <label>ボーナス返済（年2回・円）</label>
+        <input type="number" id="bonus" value="0" step="10000" min="0">
+      </div>
+      <div class="input-group" style="justify-content:flex-end">
+        <label>&nbsp;</label>
+        <button class="btn-calc" onclick="calculate()">計算する</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="resultArea" style="display:none">
+
+    <!-- サマリー -->
+    <div class="card">
+      <h2>返済概要比較</h2>
+      <div class="cmp-grid" id="cmpGrid"></div>
+      <div class="bar-wrap" id="barWrap"></div>
+    </div>
+
+    <!-- 元利均等スケジュール -->
+    <div class="card">
+      <h2>元利均等返済 — 返済スケジュール</h2>
+      <button class="schedule-toggle" onclick="toggleTable('kinriTable')">明細を表示/非表示</button>
+      <div id="kinriTable" class="scroll-wrap" style="display:none"></div>
+    </div>
+
+    <!-- 元金均等スケジュール -->
+    <div class="card">
+      <h2>元金均等返済 — 返済スケジュール</h2>
+      <button class="schedule-toggle" onclick="toggleTable('genkinTable')">明細を表示/非表示</button>
+      <div id="genkinTable" class="scroll-wrap" style="display:none"></div>
+      <p class="note">
+        ※ 据置期間中は利息のみ支払い、元金返済は猶予されます。<br>
+        ※ ボーナス返済は6月・12月に追加返済として計上（元金充当）しています。<br>
+        ※ 実際の融資条件・返済額は金融機関にご確認ください。
+      </p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function fmt(n) { return Math.round(n).toLocaleString('ja-JP'); }
+function fmtY(n) { return '¥' + fmt(n); }
+
+function toggleTable(id) {
+  const el = document.getElementById(id);
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
+function calculate() {
+  const P      = parseFloat(document.getElementById('gankin').value)  || 0;
+  const r_year = parseFloat(document.getElementById('kinri').value)   || 0;
+  const years  = parseInt(document.getElementById('kikan').value)     || 1;
+  const suioki = parseInt(document.getElementById('suioki').value)    || 0;
+  const bonus  = parseFloat(document.getElementById('bonus').value)   || 0;
+  const r      = r_year / 100 / 12;
+  const n_total = years * 12;
+  const n_repay = n_total - suioki; // 実際の返済月数
+
+  // ── 元利均等 ──────────────────────────────────────────────
+  function calcKinri() {
+    const rows = [];
+    let balance = P;
+    let totalPrincipal = 0, totalInterest = 0;
+
+    // 据置期間（利息のみ）
+    for (let m = 1; m <= suioki; m++) {
+      const interest = balance * r;
+      rows.push({ m, payment: interest, principal: 0, interest, balance });
+      totalInterest += interest;
+    }
+
+    // 返済月額（元利均等）
+    let monthly = 0;
+    if (r === 0) {
+      monthly = P / n_repay;
+    } else {
+      monthly = P * r * Math.pow(1+r, n_repay) / (Math.pow(1+r, n_repay) - 1);
+    }
+
+    for (let m = suioki + 1; m <= n_total; m++) {
+      const interest  = balance * r;
+      let principal   = monthly - interest;
+      let payment     = monthly;
+      // ボーナス月（6月・12月）
+      let bonusPay = 0;
+      const mo = ((m - 1) % 12) + 1;
+      if ((mo === 6 || mo === 12) && bonus > 0) {
+        bonusPay = Math.min(bonus, balance - principal);
+        principal += bonusPay;
+        payment   += bonusPay;
+      }
+      if (m === n_total) { // 最終月端数調整
+        principal = balance;
+        payment   = principal + interest;
+      }
+      balance -= principal;
+      if (balance < 0.5) balance = 0;
+      rows.push({ m, payment, principal, interest, balance });
+      totalPrincipal += principal;
+      totalInterest  += interest;
+    }
+    return { rows, monthly: monthly + (bonus > 0 ? bonus / 6 : 0), totalInterest, totalPayment: P + totalInterest };
+  }
+
+  // ── 元金均等 ──────────────────────────────────────────────
+  function calcGenkin() {
+    const rows = [];
+    let balance = P;
+    let totalInterest = 0;
+    const principalPerMonth = P / n_repay;
+
+    // 据置
+    for (let m = 1; m <= suioki; m++) {
+      const interest = balance * r;
+      rows.push({ m, payment: interest, principal: 0, interest, balance });
+      totalInterest += interest;
+    }
+
+    for (let m = suioki + 1; m <= n_total; m++) {
+      const interest = balance * r;
+      let principal  = principalPerMonth;
+      let payment    = principal + interest;
+      let bonusPay   = 0;
+      const mo = ((m - 1) % 12) + 1;
+      if ((mo === 6 || mo === 12) && bonus > 0) {
+        bonusPay = Math.min(bonus, balance - principal);
+        principal += bonusPay;
+        payment   += bonusPay;
+      }
+      if (m === n_total) {
+        principal = balance;
+        payment   = principal + interest;
+      }
+      balance -= principal;
+      if (balance < 0.5) balance = 0;
+      rows.push({ m, payment, principal, interest, balance });
+      totalInterest += interest;
+    }
+
+    const firstPayment = rows[suioki] ? rows[suioki].payment : 0;
+    const lastPayment  = rows[rows.length - 1].payment;
+    return { rows, firstPayment, lastPayment, totalInterest, totalPayment: P + totalInterest };
+  }
+
+  const kinri  = calcKinri();
+  const genkin = calcGenkin();
+  const diff   = kinri.totalInterest - genkin.totalInterest;
+
+  // 比較グリッド
+  document.getElementById('cmpGrid').innerHTML = `
+    <div class="cmp-box kinri">
+      <h3 class="kinri">元利均等返済</h3>
+      <div class="cmp-row"><span>毎月返済額（元金部分変動なし）</span><span>${fmtY(kinri.monthly)}円</span></div>
+      <div class="cmp-row"><span>総返済額</span><span>${fmtY(kinri.totalPayment)}円</span></div>
+      <div class="cmp-row"><span>総支払利息</span><span style="color:#f43f5e">${fmtY(kinri.totalInterest)}円</span></div>
+    </div>
+    <div class="cmp-box genkin">
+      <h3 class="genkin">元金均等返済</h3>
+      <div class="cmp-row"><span>初回返済額</span><span>${fmtY(genkin.firstPayment)}円</span></div>
+      <div class="cmp-row"><span>総返済額</span><span>${fmtY(genkin.totalPayment)}円</span></div>
+      <div class="cmp-row"><span>総支払利息（元利均等比 ▲${fmtY(diff)}円）</span><span style="color:#15803d">${fmtY(genkin.totalInterest)}円</span></div>
+    </div>`;
+
+  // バーグラフ（元金 vs 利息）
+  const maxTotal = Math.max(kinri.totalPayment, genkin.totalPayment);
+  function barHtml(label, principal, interest, total) {
+    const pPct = principal / total * 100;
+    const iPct = interest  / total * 100;
+    return `<div class="bar-wrap">
+      <div class="bar-label">${label}（総返済 ${fmtY(total)}円）</div>
+      <div class="bar-bg" style="width:${total/maxTotal*100}%">
+        <div class="bar-fill-p" style="width:${pPct}%"></div>
+        <div class="bar-fill-i" style="left:${pPct}%;width:${iPct}%"></div>
+      </div>
+      <div class="bar-legend"><span class="p">元金 ${fmtY(principal)}円</span><span class="i">利息 ${fmtY(interest)}円</span></div>
+    </div>`;
+  }
+  document.getElementById('barWrap').innerHTML =
+    barHtml('元利均等', P, kinri.totalInterest, kinri.totalPayment) +
+    barHtml('元金均等', P, genkin.totalInterest, genkin.totalPayment);
+
+  // スケジュールテーブル
+  function buildTable(rows) {
+    const ths = '<tr><th>月</th><th>返済額</th><th>元金</th><th>利息</th><th>残高</th></tr>';
+    let total_pay = 0, total_pri = 0, total_int = 0;
+    const trs = rows.map(r => {
+      total_pay += r.payment; total_pri += r.principal; total_int += r.interest;
+      return `<tr><td>${r.m}回目</td><td>${fmtY(r.payment)}</td><td>${fmtY(r.principal)}</td><td>${fmtY(r.interest)}</td><td>${fmtY(r.balance)}</td></tr>`;
+    }).join('');
+    const foot = `<tr><td>合計</td><td>${fmtY(total_pay)}</td><td>${fmtY(total_pri)}</td><td>${fmtY(total_int)}</td><td>—</td></tr>`;
+    return `<table class="stable"><thead>${ths}</thead><tbody>${trs}</tbody><tfoot>${foot}</tfoot></table>`;
+  }
+  document.getElementById('kinriTable').innerHTML  = buildTable(kinri.rows);
+  document.getElementById('genkinTable').innerHTML = buildTable(genkin.rows);
+
+  document.getElementById('resultArea').style.display = 'block';
+  document.getElementById('resultArea').scrollIntoView({ behavior: 'smooth' });
+}
+
+window.addEventListener('DOMContentLoaded', calculate);
+</script>
+</body>
+</html>

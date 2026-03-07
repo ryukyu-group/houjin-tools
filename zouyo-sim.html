@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>贈与税シミュレーション</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background: #f5f7fa; color: #333; font-size: 14px; }
+  header { background: #1a3a5c; color: #fff; padding: 20px 24px; }
+  header h1 { font-size: 1.35rem; font-weight: 700; }
+  header p { font-size: 0.82rem; opacity: 0.8; margin-top: 5px; }
+  .container { max-width: 800px; margin: 24px auto; padding: 0 16px 40px; }
+  .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 24px; margin-bottom: 20px; }
+  .card h2 { font-size: 1rem; color: #1a3a5c; border-bottom: 2px solid #1a3a5c; padding-bottom: 8px; margin-bottom: 18px; font-weight: 700; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .input-group { display: flex; flex-direction: column; gap: 6px; }
+  .input-group label { font-size: 0.82rem; color: #555; font-weight: 600; }
+  .input-group input, .input-group select { padding: 9px 11px; border: 1.5px solid #d0d5dd; border-radius: 7px; font-size: 0.95rem; font-family: inherit; }
+  .input-group input:focus, .input-group select:focus { outline: none; border-color: #1a3a5c; }
+  .info-box { background: #eef4ff; border-left: 4px solid #1a3a5c; padding: 11px 14px; border-radius: 0 7px 7px 0; font-size: 0.82rem; line-height: 1.6; color: #444; margin-top: 14px; }
+  .btn-calc { width: 100%; padding: 13px; background: #1a3a5c; color: #fff; border: none; border-radius: 8px; font-size: 1.05rem; font-weight: 700; cursor: pointer; transition: background 0.2s; margin-top: 16px; }
+  .btn-calc:hover { background: #2a5a8c; }
+
+  .result-main { text-align: center; padding: 24px; background: #eff6ff; border-radius: 10px; margin-bottom: 16px; }
+  .result-main .label { font-size: 0.85rem; color: #555; margin-bottom: 6px; }
+  .result-main .amount { font-size: 2rem; font-weight: 700; color: #1d4ed8; }
+  .result-main .rate { font-size: 0.85rem; color: #888; margin-top: 6px; }
+
+  table.dtable { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  table.dtable th { background: #f0f4f8; color: #333; padding: 8px 12px; text-align: left; font-weight: 700; }
+  table.dtable td { padding: 7px 12px; border-bottom: 1px solid #e2e8f0; }
+  table.dtable tr:last-child td { border-bottom: none; font-weight: 700; background: #eff6ff; }
+  table.dtable td:last-child { text-align: right; }
+  table.dtable th:last-child { text-align: right; }
+
+  .multi-section { margin-top: 20px; }
+  .multi-section h3 { font-size: 0.9rem; color: #1a3a5c; margin-bottom: 10px; font-weight: 700; }
+  .year-inputs { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-bottom: 12px; }
+
+  .note { font-size: 0.75rem; color: #888; margin-top: 14px; line-height: 1.7; }
+
+  @media (max-width: 600px) { .grid2 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>贈与税シミュレーション</h1>
+  <p>暦年贈与・相続時精算課税・教育資金贈与の税額を計算します</p>
+</header>
+
+<div class="container">
+
+  <div class="card">
+    <h2>贈与の基本情報</h2>
+    <div class="grid2">
+      <div class="input-group">
+        <label>課税方式</label>
+        <select id="hoshiki" onchange="onHoshikiChange()">
+          <option value="rekinenn">暦年課税</option>
+          <option value="seisan">相続時精算課税</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>贈与者と受贈者の関係</label>
+        <select id="kankei">
+          <option value="chokusei">直系尊属から18歳以上（特例税率）</option>
+          <option value="ippan">その他（一般税率）</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 暦年課税 -->
+    <div id="rekinennArea">
+      <div class="grid2" style="margin-top:14px">
+        <div class="input-group">
+          <label>贈与金額（円）</label>
+          <input type="number" id="zouyo" value="3000000" step="100000" min="0">
+        </div>
+        <div class="input-group">
+          <label>過去の贈与（この受贈者への今年の累計・円）</label>
+          <input type="number" id="zouyoPrev" value="0" step="100000" min="0">
+        </div>
+      </div>
+      <div class="info-box">
+        暦年課税の基礎控除は年間<strong>110万円</strong>（受贈者1人あたり）。<br>
+        2024年以降：相続前7年以内の贈与は相続財産に加算（2023年以前は3年）。
+      </div>
+    </div>
+
+    <!-- 相続時精算課税 -->
+    <div id="seisanArea" style="display:none">
+      <div class="grid2" style="margin-top:14px">
+        <div class="input-group">
+          <label>今回の贈与金額（円）</label>
+          <input type="number" id="seisanZouyo" value="5000000" step="100000" min="0">
+        </div>
+        <div class="input-group">
+          <label>過去の精算課税贈与累計（円）</label>
+          <input type="number" id="seisanRuikei" value="0" step="100000" min="0">
+        </div>
+      </div>
+      <div class="info-box">
+        相続時精算課税：累計2,500万円まで非課税（特別控除）。超過分は一律20%。<br>
+        2024年以降：年間110万円の基礎控除が新設（精算課税でも毎年110万は非課税・相続加算不要）。
+      </div>
+    </div>
+
+    <button class="btn-calc" onclick="calculate()">計算する</button>
+  </div>
+
+  <!-- 結果 -->
+  <div class="card" id="resultCard" style="display:none">
+    <h2>計算結果</h2>
+    <div class="result-main" id="resultMain"></div>
+    <table class="dtable" id="detailTable"></table>
+    <p class="note" id="resultNote"></p>
+  </div>
+
+  <!-- 参考：暦年税率表 -->
+  <div class="card">
+    <h2>参考：贈与税の税率表</h2>
+    <div class="grid2">
+      <div>
+        <p style="font-size:0.82rem;font-weight:700;margin-bottom:8px;color:#1a3a5c">特例税率（直系尊属→18歳以上）</p>
+        <table class="dtable">
+          <tr><th>課税価格</th><th>税率</th><th>控除額</th></tr>
+          <tr><td>200万円以下</td><td>10%</td><td>—</td></tr>
+          <tr><td>400万円以下</td><td>15%</td><td>10万円</td></tr>
+          <tr><td>600万円以下</td><td>20%</td><td>30万円</td></tr>
+          <tr><td>1,000万円以下</td><td>30%</td><td>90万円</td></tr>
+          <tr><td>1,500万円以下</td><td>40%</td><td>190万円</td></tr>
+          <tr><td>3,000万円以下</td><td>45%</td><td>265万円</td></tr>
+          <tr><td>4,500万円以下</td><td>50%</td><td>415万円</td></tr>
+          <tr><td>4,500万円超</td><td>55%</td><td>640万円</td></tr>
+        </table>
+      </div>
+      <div>
+        <p style="font-size:0.82rem;font-weight:700;margin-bottom:8px;color:#1a3a5c">一般税率</p>
+        <table class="dtable">
+          <tr><th>課税価格</th><th>税率</th><th>控除額</th></tr>
+          <tr><td>200万円以下</td><td>10%</td><td>—</td></tr>
+          <tr><td>300万円以下</td><td>15%</td><td>10万円</td></tr>
+          <tr><td>400万円以下</td><td>20%</td><td>25万円</td></tr>
+          <tr><td>600万円以下</td><td>30%</td><td>65万円</td></tr>
+          <tr><td>1,000万円以下</td><td>40%</td><td>125万円</td></tr>
+          <tr><td>1,500万円以下</td><td>45%</td><td>175万円</td></tr>
+          <tr><td>3,000万円以下</td><td>50%</td><td>250万円</td></tr>
+          <tr><td>3,000万円超</td><td>55%</td><td>400万円</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function onHoshikiChange() {
+  const h = document.getElementById('hoshiki').value;
+  document.getElementById('rekinennArea').style.display = h === 'rekinenn' ? 'block' : 'none';
+  document.getElementById('seisanArea').style.display   = h === 'seisan'   ? 'block' : 'none';
+  document.getElementById('kankei').disabled = h === 'seisan';
+}
+
+function fmt(n) { return Math.round(n).toLocaleString('ja-JP') + '円'; }
+
+// 暦年課税 税率表
+const TOKUREI = [
+  [2000000, 0.10, 0], [4000000, 0.15, 100000], [6000000, 0.20, 300000],
+  [10000000, 0.30, 900000], [15000000, 0.40, 1900000], [30000000, 0.45, 2650000],
+  [45000000, 0.50, 4150000], [Infinity, 0.55, 6400000],
+];
+const IPPAN = [
+  [2000000, 0.10, 0], [3000000, 0.15, 100000], [4000000, 0.20, 250000],
+  [6000000, 0.30, 650000], [10000000, 0.40, 1250000], [15000000, 0.45, 1750000],
+  [30000000, 0.50, 2500000], [Infinity, 0.55, 4000000],
+];
+
+function calcZouyozei(kaseiKakaku, table) {
+  if (kaseiKakaku <= 0) return 0;
+  for (const [limit, rate, ded] of table) {
+    if (kaseiKakaku <= limit) return kaseiKakaku * rate - ded;
+  }
+  return 0;
+}
+
+function calculate() {
+  const hoshiki = document.getElementById('hoshiki').value;
+  const kankei  = document.getElementById('kankei').value;
+  const table   = kankei === 'chokusei' ? TOKUREI : IPPAN;
+
+  if (hoshiki === 'rekinenn') {
+    const zouyo     = parseFloat(document.getElementById('zouyo').value)     || 0;
+    const prev      = parseFloat(document.getElementById('zouyoPrev').value) || 0;
+    const kiso      = 1100000; // 基礎控除
+    const totalZouyo = zouyo + prev;
+    const kaseiKakaku = Math.max(0, totalZouyo - kiso);
+    const zei        = calcZouyozei(kaseiKakaku, table);
+    const jisshuRate = zouyo > 0 ? zei / zouyo * 100 : 0;
+
+    document.getElementById('resultMain').innerHTML = `
+      <div class="label">贈与税額</div>
+      <div class="amount">${fmt(zei)}</div>
+      <div class="rate">実質負担率 ${jisshuRate.toFixed(1)}%（贈与額に対する割合）</div>`;
+
+    document.getElementById('detailTable').innerHTML = `
+      <tr><th>項目</th><th>金額</th></tr>
+      <tr><td>贈与金額（今回）</td><td>${fmt(zouyo)}</td></tr>
+      <tr><td>前回までの贈与累計（今年）</td><td>${fmt(prev)}</td></tr>
+      <tr><td>合計贈与金額（今年）</td><td>${fmt(totalZouyo)}</td></tr>
+      <tr><td>基礎控除</td><td>▲${fmt(kiso)}</td></tr>
+      <tr><td>課税価格</td><td>${fmt(kaseiKakaku)}</td></tr>
+      <tr><td>贈与税額</td><td>${fmt(zei)}</td></tr>`;
+
+    document.getElementById('resultNote').innerHTML =
+      '※ 暦年課税：受贈者1人あたり年間110万円の基礎控除。<br>' +
+      '※ 2024年以降、相続発生前7年以内の贈与（基礎控除以下も含む）は相続財産に加算（延長分4年は100万円控除）。<br>' +
+      '※ 申告・納税は贈与を受けた翌年の2月1日〜3月15日。税理士にご確認ください。';
+
+  } else {
+    const zouyo   = parseFloat(document.getElementById('seisanZouyo').value)  || 0;
+    const ruikei  = parseFloat(document.getElementById('seisanRuikei').value) || 0;
+    const kiso    = 1100000; // 2024年新設基礎控除
+    const tokubetsu = 25000000; // 特別控除
+    const zouyoAfterKiso = Math.max(0, zouyo - kiso);
+    const newRuikei = ruikei + zouyoAfterKiso;
+    const tokubetsuZanshi = Math.max(0, tokubetsu - ruikei);
+    const kaseiKakaku = Math.max(0, zouyoAfterKiso - tokubetsuZanshi);
+    const zei = kaseiKakaku * 0.20;
+
+    document.getElementById('resultMain').innerHTML = `
+      <div class="label">贈与税額（今回）</div>
+      <div class="amount">${fmt(zei)}</div>
+      <div class="rate">特別控除残額 ${fmt(Math.max(0, tokubetsu - newRuikei))}（次回以降に利用可能）</div>`;
+
+    document.getElementById('detailTable').innerHTML = `
+      <tr><th>項目</th><th>金額</th></tr>
+      <tr><td>贈与金額（今回）</td><td>${fmt(zouyo)}</td></tr>
+      <tr><td>基礎控除（年間）</td><td>▲${fmt(kiso)}</td></tr>
+      <tr><td>基礎控除後の贈与額</td><td>${fmt(zouyoAfterKiso)}</td></tr>
+      <tr><td>特別控除残額（2,500万円 − 過去累計）</td><td>▲${fmt(tokubetsuZanshi)}</td></tr>
+      <tr><td>課税価格</td><td>${fmt(kaseiKakaku)}</td></tr>
+      <tr><td>贈与税額（一律20%）</td><td>${fmt(zei)}</td></tr>
+      <tr><td>過去累計（基礎控除超分）</td><td>${fmt(newRuikei)}</td></tr>`;
+
+    document.getElementById('resultNote').innerHTML =
+      '※ 相続時精算課税：2,500万円特別控除は累計で管理。超過分は一律20%。<br>' +
+      '※ 2024年以降、年間110万円の基礎控除が新設。基礎控除内の贈与は相続財産への加算不要。<br>' +
+      '※ 相続時に贈与財産（基礎控除超分）を相続財産に加算して相続税を再計算し、支払済贈与税を控除。<br>' +
+      '※ 実際の申告は税理士にご確認ください。';
+  }
+
+  document.getElementById('resultCard').style.display = 'block';
+  document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+window.addEventListener('DOMContentLoaded', calculate);
+</script>
+</body>
+</html>
