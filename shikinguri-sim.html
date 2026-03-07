@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>資金繰りシミュレーション</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background: #f5f7fa; color: #333; font-size: 14px; }
+  header { background: #1a3a5c; color: #fff; padding: 20px 24px; }
+  header h1 { font-size: 1.35rem; font-weight: 700; }
+  header p { font-size: 0.82rem; opacity: 0.8; margin-top: 5px; }
+  .container { max-width: 1100px; margin: 24px auto; padding: 0 16px 40px; }
+  .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 24px; margin-bottom: 20px; }
+  .card h2 { font-size: 1rem; color: #1a3a5c; border-bottom: 2px solid #1a3a5c; padding-bottom: 8px; margin-bottom: 18px; font-weight: 700; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .input-group { display: flex; flex-direction: column; gap: 5px; }
+  .input-group label { font-size: 0.82rem; color: #555; font-weight: 600; }
+  .input-group input, .input-group select { padding: 8px 10px; border: 1.5px solid #d0d5dd; border-radius: 7px; font-size: 0.9rem; font-family: inherit; }
+  .input-group input:focus { outline: none; border-color: #1a3a5c; }
+  .info-box { background: #eef4ff; border-left: 4px solid #1a3a5c; padding: 10px 13px; border-radius: 0 7px 7px 0; font-size: 0.8rem; line-height: 1.6; color: #444; margin: 12px 0; }
+  .btn-calc { padding: 11px 28px; background: #1a3a5c; color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 14px; }
+  .btn-calc:hover { background: #2a5a8c; }
+  .btn-reset { padding: 11px 20px; background: #f0f4f8; color: #555; border: 1.5px solid #d0d5dd; border-radius: 8px; font-size: 0.9rem; cursor: pointer; margin-top: 14px; margin-left: 8px; }
+
+  /* 入力グリッド */
+  .month-grid { display: grid; grid-template-columns: 120px repeat(12, 1fr); gap: 2px; margin-bottom: 8px; min-width: 900px; }
+  .month-grid .header { background: #1a3a5c; color: #fff; padding: 7px 4px; text-align: center; font-size: 0.78rem; font-weight: 700; border-radius: 4px; }
+  .month-grid .row-label { background: #f0f4f8; padding: 7px 8px; font-size: 0.78rem; font-weight: 600; color: #333; display: flex; align-items: center; border-radius: 4px; }
+  .month-grid .row-label.sub { background: #fff; color: #666; padding-left: 16px; }
+  .month-grid input { padding: 6px 4px; border: 1px solid #d0d5dd; border-radius: 4px; font-size: 0.8rem; text-align: right; width: 100%; font-family: inherit; }
+  .month-grid input:focus { outline: none; border-color: #1a3a5c; }
+  .scroll-wrap { overflow-x: auto; }
+  .subhead { font-size: 0.82rem; font-weight: 700; color: #1a3a5c; margin: 14px 0 8px; }
+
+  /* 結果表 */
+  table.rt { border-collapse: collapse; font-size: 0.8rem; min-width: 900px; width: 100%; }
+  table.rt th { background: #1a3a5c; color: #fff; padding: 7px 8px; text-align: right; white-space: nowrap; }
+  table.rt th:first-child { text-align: left; min-width: 120px; }
+  table.rt td { padding: 6px 8px; border-bottom: 1px solid #f0f4f8; text-align: right; white-space: nowrap; }
+  table.rt td:first-child { text-align: left; font-size: 0.78rem; color: #555; }
+  table.rt tr.subtotal td { background: #f5f8fc; font-weight: 700; }
+  table.rt tr.total td { background: #dbeafe; font-weight: 700; color: #1a3a5c; }
+  table.rt tr.danger td { color: #be123c !important; }
+  table.rt td.negative { color: #be123c; font-weight: 700; }
+  table.rt td.positive { color: #15803d; }
+
+  /* バーグラフ */
+  .bar-chart { display: flex; gap: 4px; align-items: flex-end; height: 100px; margin: 12px 0; min-width: 900px; }
+  .bar-col { display: flex; flex-direction: column; align-items: center; flex: 1; gap: 2px; }
+  .bar-pos { background: #3b82f6; border-radius: 3px 3px 0 0; width: 100%; min-height: 2px; }
+  .bar-neg { background: #f43f5e; border-radius: 0 0 3px 3px; width: 100%; min-height: 2px; }
+  .bar-lbl { font-size: 0.62rem; color: #888; text-align: center; white-space: nowrap; }
+
+  .note { font-size: 0.75rem; color: #888; margin-top: 14px; line-height: 1.7; }
+</style>
+</head>
+<body>
+<header>
+  <h1>資金繰りシミュレーション</h1>
+  <p>月次の収入・支出を入力して年間キャッシュフローと資金ショートリスクを確認します</p>
+</header>
+<div class="container">
+
+  <div class="card">
+    <h2>基本設定</h2>
+    <div class="grid2">
+      <div class="input-group">
+        <label>期首現預金残高（円）</label>
+        <input type="number" id="kisuhu" value="5000000" step="100000" min="0">
+      </div>
+      <div class="input-group">
+        <label>開始月</label>
+        <select id="startMonth">
+          <option value="1">1月（1〜12月）</option>
+          <option value="4" selected>4月（4〜3月）</option>
+          <option value="7">7月（7〜6月）</option>
+          <option value="10">10月（10〜9月）</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>月次収支入力</h2>
+    <div class="info-box">数値を変更すると「計算する」ボタンを押すことで資金繰り表が更新されます。全欄0以上で入力（支出はプラス値で入力）。</div>
+    <div class="scroll-wrap" id="inputArea"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+      <button class="btn-calc" onclick="calculate()">計算する</button>
+      <button class="btn-reset" onclick="resetInputs()">入力をリセット</button>
+    </div>
+  </div>
+
+  <div class="card" id="resultCard" style="display:none">
+    <h2>資金繰り表</h2>
+    <div class="scroll-wrap">
+      <div class="bar-chart" id="barChart"></div>
+    </div>
+    <div class="scroll-wrap" style="margin-top:8px">
+      <table class="rt" id="resultTable"></table>
+    </div>
+    <p class="note" id="resultNote"></p>
+  </div>
+
+</div>
+
+<script>
+const ROWS = [
+  {key:'uriage',   label:'売上・収入',       group:'in',  sub:false},
+  {key:'sonota_in',label:'その他収入（借入等）',group:'in', sub:true},
+  {key:'genka',    label:'仕入・原価',        group:'out', sub:false},
+  {key:'jinken',   label:'人件費',            group:'out', sub:false},
+  {key:'chintai',  label:'家賃',              group:'out', sub:true},
+  {key:'koukoku',  label:'広告費',            group:'out', sub:true},
+  {key:'kariire',  label:'借入返済',          group:'out', sub:true},
+  {key:'zei',      label:'税金・社保',        group:'out', sub:true},
+  {key:'sonota_out',label:'その他支出',       group:'out', sub:true},
+];
+
+const DEFAULTS = {
+  uriage:1500000, sonota_in:0, genka:500000, jinken:400000,
+  chintai:100000, koukoku:50000, kariire:100000, zei:80000, sonota_out:100000
+};
+
+let startMonth = 4;
+
+function getMonthLabels(start) {
+  const labels = [];
+  for(let i=0;i<12;i++) labels.push(((start-1+i)%12+1)+'月');
+  return labels;
+}
+
+function buildInputGrid() {
+  startMonth = parseInt(document.getElementById('startMonth').value)||4;
+  const labels = getMonthLabels(startMonth);
+  let html = '<div class="month-grid">';
+  html += '<div class="header">項目</div>';
+  labels.forEach(l => html += `<div class="header">${l}</div>`);
+  html += '</div>';
+
+  ROWS.forEach(row => {
+    html += '<div class="month-grid">';
+    html += `<div class="row-label${row.sub?' sub':''}">${row.label}</div>`;
+    for(let m=0;m<12;m++) {
+      const def = DEFAULTS[row.key]||0;
+      html += `<div><input type="number" id="${row.key}_${m}" value="${def}" min="0" step="10000"></div>`;
+    }
+    html += '</div>';
+  });
+  document.getElementById('inputArea').innerHTML = html;
+}
+
+function resetInputs() {
+  ROWS.forEach(row => {
+    for(let m=0;m<12;m++) {
+      const el = document.getElementById(`${row.key}_${m}`);
+      if(el) el.value = DEFAULTS[row.key]||0;
+    }
+  });
+}
+
+function calculate() {
+  startMonth = parseInt(document.getElementById('startMonth').value)||4;
+  const kisuhu = parseFloat(document.getElementById('kisuhu').value)||0;
+  const labels = getMonthLabels(startMonth);
+
+  // 月次データ取得
+  const data = {};
+  ROWS.forEach(row => {
+    data[row.key] = [];
+    for(let m=0;m<12;m++) {
+      data[row.key].push(parseFloat(document.getElementById(`${row.key}_${m}`)?.value)||0);
+    }
+  });
+
+  // 月次計算
+  const results = [];
+  let ruikei = kisuhu;
+  for(let m=0;m<12;m++) {
+    const shunyu = data.uriage[m] + data.sonota_in[m];
+    const shishutsu = data.genka[m]+data.jinken[m]+data.chintai[m]+data.koukoku[m]+data.kariire[m]+data.zei[m]+data.sonota_out[m];
+    const net = shunyu - shishutsu;
+    ruikei += net;
+    results.push({label:labels[m], shunyu, shishutsu, net, ruikei,
+      uriage:data.uriage[m], sonota_in:data.sonota_in[m],
+      genka:data.genka[m], jinken:data.jinken[m], chintai:data.chintai[m],
+      koukoku:data.koukoku[m], kariire:data.kariire[m], zei:data.zei[m], sonota_out:data.sonota_out[m]
+    });
+  }
+
+  const fmt = n => Math.round(n).toLocaleString('ja-JP');
+  const fmtC = (n, cls='') => `<td class="${n<0?'negative':n>0&&cls?'positive':''}">${fmt(n)}</td>`;
+
+  // バーグラフ
+  const maxAbs = Math.max(...results.map(r=>Math.abs(r.net)), 1);
+  const bars = results.map(r => {
+    const posH = r.net>0 ? Math.round(r.net/maxAbs*70) : 0;
+    const negH = r.net<0 ? Math.round(-r.net/maxAbs*70) : 0;
+    return `<div class="bar-col">
+      <div class="bar-pos" style="height:${posH}px"></div>
+      <div class="bar-neg" style="height:${negH}px"></div>
+      <div class="bar-lbl">${r.label}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('barChart').innerHTML = bars;
+
+  // 結果テーブル
+  const ths = `<tr><th>項目</th>${results.map(r=>`<th>${r.label}</th>`).join('')}<th>合計/期末</th></tr>`;
+
+  function sumRow(key) { return results.reduce((s,r)=>s+r[key],0); }
+
+  const totalShunyu = sumRow('shunyu'), totalShishutsu = sumRow('shishutsu');
+  const totalNet = sumRow('net');
+
+  const rows = [
+    ['収入計', results.map(r=>r.shunyu), true],
+    ['　売上・収入', results.map(r=>r.uriage)],
+    ['　その他収入', results.map(r=>r.sonota_in)],
+    ['支出計', results.map(r=>r.shishutsu), true],
+    ['　仕入・原価', results.map(r=>r.genka)],
+    ['　人件費', results.map(r=>r.jinken)],
+    ['　家賃', results.map(r=>r.chintai)],
+    ['　広告費', results.map(r=>r.koukoku)],
+    ['　借入返済', results.map(r=>r.kariire)],
+    ['　税金・社保', results.map(r=>r.zei)],
+    ['　その他支出', results.map(r=>r.sonota_out)],
+    ['月次収支', results.map(r=>r.net), true, 'net'],
+    ['累計現預金残高', results.map(r=>r.ruikei), true, 'ruikei'],
+  ];
+
+  let hasDanger = false;
+  const trs = rows.map(([label, vals, isSub, type]) => {
+    const total = vals.reduce((s,v)=>s+v,0);
+    const isDanger = type==='ruikei' && vals.some(v=>v<0);
+    if(isDanger) hasDanger=true;
+    const cls = isSub?(type?'total':'subtotal'):'';
+    const lastVal = type==='ruikei' ? results[11].ruikei : total;
+    return `<tr class="${cls}${isDanger?' danger':''}">
+      <td>${label}</td>
+      ${vals.map(v=>`<td class="${v<0?'negative':''}">${fmt(v)}</td>`).join('')}
+      <td class="${lastVal<0?'negative':''}">${fmt(lastVal)}</td>
+    </tr>`;
+  }).join('');
+
+  // 期首行
+  const kisuhuRow = `<tr class="subtotal"><td>期首現預金残高</td>${Array(12).fill(`<td>—</td>`).join('')}<td>${fmt(kisuhu)}</td></tr>`;
+
+  document.getElementById('resultTable').innerHTML = `
+    <thead>${ths}</thead>
+    <tbody>${kisuhuRow}${trs}</tbody>`;
+
+  const noteText = hasDanger
+    ? '⚠️ 資金ショートが発生する月があります（残高がマイナスの月）。借入・売上前倒し・支出削減をご検討ください。'
+    : '資金ショートなし。期末現預金残高：' + fmt(results[11].ruikei) + '円';
+  document.getElementById('resultNote').textContent = noteText;
+  document.getElementById('resultNote').style.color = hasDanger ? '#be123c' : '#888';
+
+  document.getElementById('resultCard').style.display='block';
+  document.getElementById('resultCard').scrollIntoView({behavior:'smooth'});
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('startMonth').addEventListener('change', buildInputGrid);
+  buildInputGrid();
+  calculate();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FX・仮想通貨 税金シミュレーション</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background: #f5f7fa; color: #333; font-size: 14px; }
+  header { background: #1a3a5c; color: #fff; padding: 20px 24px; }
+  header h1 { font-size: 1.35rem; font-weight: 700; }
+  header p { font-size: 0.82rem; opacity: 0.8; margin-top: 5px; }
+  .container { max-width: 900px; margin: 24px auto; padding: 0 16px 40px; }
+  .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 24px; margin-bottom: 20px; }
+  .card h2 { font-size: 1rem; color: #1a3a5c; border-bottom: 2px solid #1a3a5c; padding-bottom: 8px; margin-bottom: 18px; font-weight: 700; }
+  .tab-bar { display: flex; gap: 4px; margin-bottom: 20px; }
+  .tab { padding: 9px 20px; cursor: pointer; font-size: 0.88rem; font-weight: 600; color: #555; border-radius: 7px 7px 0 0; background: #f0f4f8; border: 1.5px solid #d0d5dd; border-bottom: none; }
+  .tab.active { background: #1a3a5c; color: #fff; border-color: #1a3a5c; }
+  .tab-panel { display: none; } .tab-panel.active { display: block; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .input-group { display: flex; flex-direction: column; gap: 5px; }
+  .input-group label { font-size: 0.82rem; color: #555; font-weight: 600; }
+  .input-group input, .input-group select { padding: 9px 11px; border: 1.5px solid #d0d5dd; border-radius: 7px; font-size: 0.95rem; font-family: inherit; }
+  .input-group input:focus { outline: none; border-color: #1a3a5c; }
+  .info-box { background: #eef4ff; border-left: 4px solid #1a3a5c; padding: 10px 13px; border-radius: 0 7px 7px 0; font-size: 0.8rem; line-height: 1.6; color: #444; margin: 12px 0; }
+  .warn-box { background: #fffbeb; border-left: 4px solid #d97706; padding: 10px 13px; border-radius: 0 7px 7px 0; font-size: 0.8rem; line-height: 1.6; color: #444; margin: 12px 0; }
+  .btn-calc { width: 100%; padding: 12px; background: #1a3a5c; color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 14px; }
+  .btn-calc:hover { background: #2a5a8c; }
+
+  .result-main { text-align: center; padding: 22px; background: #fff1f2; border-radius: 10px; margin-bottom: 16px; }
+  .result-main .label { font-size: 0.85rem; color: #555; margin-bottom: 4px; }
+  .result-main .amount { font-size: 2rem; font-weight: 700; color: #be123c; }
+  .result-main .sub { font-size: 0.82rem; color: #888; margin-top: 6px; }
+
+  table.dt { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  table.dt th { background: #f0f4f8; color: #333; padding: 8px 12px; text-align: left; font-weight: 700; }
+  table.dt th:last-child { text-align: right; }
+  table.dt td { padding: 7px 12px; border-bottom: 1px solid #e2e8f0; }
+  table.dt td:last-child { text-align: right; }
+  table.dt tr.total td { background: #fff1f2; font-weight: 700; color: #be123c; }
+  table.dt tr.section td { background: #f0f4f8; font-weight: 700; color: #1a3a5c; }
+
+  .rate-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .rate-table th { background: #1a3a5c; color: #fff; padding: 7px 10px; }
+  .rate-table td { padding: 6px 10px; border-bottom: 1px solid #e2e8f0; text-align: center; }
+  .rate-table td:first-child { text-align: left; }
+  .note { font-size: 0.75rem; color: #888; margin-top: 14px; line-height: 1.7; }
+  @media (max-width: 600px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>FX・仮想通貨 税金シミュレーション</h1>
+  <p>国内FX（申告分離）・海外FX・仮想通貨（総合課税）の税額を計算します</p>
+</header>
+<div class="container">
+
+  <div class="tab-bar">
+    <div class="tab active" onclick="switchTab('fx')">国内FX（申告分離）</div>
+    <div class="tab" onclick="switchTab('kaigai')">海外FX・仮想通貨（総合課税）</div>
+  </div>
+
+  <!-- 国内FX -->
+  <div class="tab-panel active" id="tab-fx">
+    <div class="card">
+      <h2>国内FX・税金計算</h2>
+      <div class="grid2">
+        <div class="input-group">
+          <label>FX取引の年間損益（円）</label>
+          <input type="number" id="fxRieki" value="2000000" step="100000">
+        </div>
+        <div class="input-group">
+          <label>前年からの繰越損失（円）</label>
+          <input type="number" id="fxKurikoshi" value="0" step="100000" min="0">
+        </div>
+      </div>
+      <div class="info-box">
+        国内FXは<strong>申告分離課税</strong>。税率は一律 <strong>20.315%</strong>（所得税15%＋住民税5%＋復興特別所得税0.315%）。<br>
+        損失は3年間繰越可能。他の先物取引（CFD・商品先物等）との損益通算も可。
+      </div>
+      <button class="btn-calc" onclick="calcFX()">計算する</button>
+    </div>
+    <div class="card" id="fxResult" style="display:none">
+      <h2>計算結果</h2>
+      <div class="result-main" id="fxMain"></div>
+      <table class="dt" id="fxDetail"></table>
+      <p class="note">※ 国内FX：先物取引に係る雑所得等として申告分離課税。損失は翌年以後3年間繰越控除可能（確定申告が必要）。</p>
+    </div>
+  </div>
+
+  <!-- 海外FX・仮想通貨 -->
+  <div class="tab-panel" id="tab-kaigai">
+    <div class="card">
+      <h2>海外FX・仮想通貨 税金計算（雑所得・総合課税）</h2>
+      <div class="grid3">
+        <div class="input-group">
+          <label>海外FX / 仮想通貨の利益（円）</label>
+          <input type="number" id="zasshotoku" value="3000000" step="100000" min="0">
+        </div>
+        <div class="input-group">
+          <label>給与所得等（他の所得・円）</label>
+          <input type="number" id="kyuyoShotoku" value="5000000" step="100000" min="0">
+        </div>
+        <div class="input-group">
+          <label>各種所得控除の合計（円）</label>
+          <input type="number" id="shotokuKojo" value="1500000" step="100000" min="0">
+        </div>
+      </div>
+      <div class="warn-box">
+        海外FX・仮想通貨（暗号資産）は<strong>雑所得として総合課税</strong>。給与等と合算され、最高税率55%（所得税45%＋住民税10%）が適用される場合があります。<br>
+        損失は他の所得との通算不可。翌年への繰越も不可。
+      </div>
+      <button class="btn-calc" onclick="calcKaigai()">計算する</button>
+    </div>
+    <div class="card" id="kaigaiResult" style="display:none">
+      <h2>計算結果</h2>
+      <div class="result-main" id="kaigaiMain"></div>
+      <table class="dt" id="kaigaiDetail"></table>
+      <p class="note">
+        ※ 雑所得（総合課税）：給与所得等と合算して所得税・住民税を計算。<br>
+        ※ 仮想通貨：売却・交換・決済（利用）がすべて課税対象。取得価額は移動平均法か総平均法。<br>
+        ※ 2025年以降、仮想通貨の申告分離課税・損失繰越について税制改正が議論されています。最新情報をご確認ください。
+      </p>
+    </div>
+
+    <!-- 比較表 -->
+    <div class="card">
+      <h2>国内FX vs 海外FX・仮想通貨 税率比較</h2>
+      <table class="rate-table">
+        <thead><tr><th>利益額（目安）</th><th>国内FX（分離課税）</th><th>海外FX・仮想通貨（総合）</th></tr></thead>
+        <tbody>
+          <tr><td>〜195万円</td><td rowspan="7" style="vertical-align:middle;background:#eff6ff;color:#1d4ed8;font-weight:700">一律 20.315%</td><td>〜15%（住民税含め）</td></tr>
+          <tr><td>〜330万円</td><td>〜20%</td></tr>
+          <tr><td>〜695万円</td><td>〜30%</td></tr>
+          <tr><td>〜900万円</td><td>〜33%</td></tr>
+          <tr><td>〜1,800万円</td><td>〜43%（国内FXより高い）</td></tr>
+          <tr><td>〜4,000万円</td><td>〜50%</td></tr>
+          <tr><td>4,000万円超</td><td>〜55%（最高）</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.toggle('active',['fx','kaigai'][i]===name);});
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+}
+function fmt(n){return Math.round(n).toLocaleString('ja-JP')+'円';}
+function fmtPct(n){return n.toFixed(2)+'%';}
+
+function calcShotokuzei(taxable){
+  if(taxable<=0)return 0;
+  const tbl=[[1950000,0.05,0],[3300000,0.10,97500],[6950000,0.20,427500],[9000000,0.23,636000],[18000000,0.33,1536000],[40000000,0.40,2796000],[Infinity,0.45,4796000]];
+  for(const [l,r,d] of tbl) if(taxable<=l) return Math.max(0,taxable*r-d);
+  return 0;
+}
+
+function calcFX(){
+  const rieki     = parseFloat(document.getElementById('fxRieki').value)||0;
+  const kurikoshi = parseFloat(document.getElementById('fxKurikoshi').value)||0;
+  const kazei     = Math.max(0, rieki - kurikoshi);
+  const shotokuzei = Math.floor(kazei * 0.15);
+  const fukko      = Math.floor(shotokuzei * 0.021);
+  const juminzei   = Math.floor(kazei * 0.05);
+  const total      = shotokuzei + fukko + juminzei;
+  const rate       = kazei > 0 ? total/kazei*100 : 0;
+
+  document.getElementById('fxMain').innerHTML=`
+    <div class="label">税額合計（申告分離 20.315%）</div>
+    <div class="amount">${fmt(total)}</div>
+    <div class="sub">実効税率 ${fmtPct(rate)}　手取り利益 ${fmt(rieki - total)}</div>`;
+
+  document.getElementById('fxDetail').innerHTML=`
+    <tr><th>項目</th><th>金額</th></tr>
+    <tr><td>FX年間損益</td><td>${fmt(rieki)}</td></tr>
+    <tr><td>前年繰越損失</td><td>${rieki<0?'（損失のため繰越可）':'▲'+fmt(kurikoshi)}</td></tr>
+    <tr><td>課税所得</td><td>${fmt(kazei)}</td></tr>
+    <tr><td>所得税（15%）</td><td>${fmt(shotokuzei)}</td></tr>
+    <tr><td>復興特別所得税（×2.1%）</td><td>${fmt(fukko)}</td></tr>
+    <tr><td>住民税（5%）</td><td>${fmt(juminzei)}</td></tr>
+    <tr class="total"><td>税額合計（20.315%）</td><td>${fmt(total)}</td></tr>`;
+  document.getElementById('fxResult').style.display='block';
+  document.getElementById('fxResult').scrollIntoView({behavior:'smooth'});
+}
+
+function calcKaigai(){
+  const zassShotoku = parseFloat(document.getElementById('zasshotoku').value)||0;
+  const kyuyoShotoku= parseFloat(document.getElementById('kyuyoShotoku').value)||0;
+  const kojo        = parseFloat(document.getElementById('shotokuKojo').value)||0;
+
+  // 給与所得
+  function kyuyoKojo(income){
+    if(income<=1625000)return 550000;
+    if(income<=1800000)return Math.max(income*0.4-100000,550000);
+    if(income<=3600000)return income*0.3+80000;
+    if(income<=6600000)return income*0.2+440000;
+    if(income<=8500000)return income*0.1+1100000;
+    return 1950000;
+  }
+  const kyuyoShotokuNet = Math.max(0, kyuyoShotoku - kyuyoKojo(kyuyoShotoku));
+
+  // 雑所得（海外FX・仮想通貨）は控除なし（経費は除く）
+  const totalShotoku = kyuyoShotokuNet + zassShotoku;
+  const kaseiShotoku = Math.max(0, totalShotoku - kojo);
+  const kaseiShotokuWithoutZass = Math.max(0, kyuyoShotokuNet - kojo);
+
+  const staxTotal = calcShotokuzei(kaseiShotoku) * 1.021;
+  const staxBase  = calcShotokuzei(kaseiShotokuWithoutZass) * 1.021;
+  const staxZass  = staxTotal - staxBase;
+
+  const kaseiJumin = Math.max(0, totalShotoku - kojo - 50000);
+  const kaseiJuminBase = Math.max(0, kyuyoShotokuNet - kojo - 50000);
+  const juminTotal = Math.max(0, kaseiJumin * 0.10 - 2500) + 5000;
+  const juminBase  = Math.max(0, kaseiJuminBase * 0.10 - 2500) + 5000;
+  const juminZass  = juminTotal - juminBase;
+
+  const totalTax   = staxZass + juminZass;
+  const effRate    = zassShotoku > 0 ? totalTax/zassShotoku*100 : 0;
+
+  document.getElementById('kaigaiMain').innerHTML=`
+    <div class="label">海外FX・仮想通貨分の税額増加分</div>
+    <div class="amount">${fmt(totalTax)}</div>
+    <div class="sub">実効税率 ${fmtPct(effRate)}　手取り利益 ${fmt(zassShotoku - totalTax)}</div>`;
+
+  document.getElementById('kaigaiDetail').innerHTML=`
+    <tr><th>項目</th><th>金額</th></tr>
+    <tr class="section"><td colspan="2">雑所得追加前</td></tr>
+    <tr><td>給与所得（控除後）</td><td>${fmt(kyuyoShotokuNet)}</td></tr>
+    <tr><td>所得控除合計</td><td>▲${fmt(kojo)}</td></tr>
+    <tr><td>課税所得</td><td>${fmt(kaseiShotokuWithoutZass)}</td></tr>
+    <tr><td>所得税＋復興（追加前）</td><td>${fmt(staxBase)}</td></tr>
+    <tr><td>住民税（追加前）</td><td>${fmt(juminBase)}</td></tr>
+    <tr class="section"><td colspan="2">雑所得追加後</td></tr>
+    <tr><td>海外FX・仮想通貨 利益（雑所得）</td><td>+${fmt(zassShotoku)}</td></tr>
+    <tr><td>合計課税所得</td><td>${fmt(kaseiShotoku)}</td></tr>
+    <tr><td>所得税＋復興（追加後）</td><td>${fmt(staxTotal)}</td></tr>
+    <tr><td>住民税（追加後）</td><td>${fmt(juminTotal)}</td></tr>
+    <tr class="total"><td>雑所得分の税額増加（実質税額）</td><td>${fmt(totalTax)}</td></tr>`;
+  document.getElementById('kaigaiResult').style.display='block';
+  document.getElementById('kaigaiResult').scrollIntoView({behavior:'smooth'});
+}
+</script>
+</body>
+</html>

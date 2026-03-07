@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>相続税シミュレーション</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background: #f5f7fa; color: #333; font-size: 14px; }
+  header { background: #1a3a5c; color: #fff; padding: 20px 24px; }
+  header h1 { font-size: 1.35rem; font-weight: 700; }
+  header p { font-size: 0.82rem; opacity: 0.8; margin-top: 5px; }
+  .container { max-width: 960px; margin: 24px auto; padding: 0 16px 40px; }
+  .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 24px; margin-bottom: 20px; }
+  .card h2 { font-size: 1rem; color: #1a3a5c; border-bottom: 2px solid #1a3a5c; padding-bottom: 8px; margin-bottom: 18px; font-weight: 700; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .input-group { display: flex; flex-direction: column; gap: 5px; }
+  .input-group label { font-size: 0.82rem; color: #555; font-weight: 600; }
+  .input-group input, .input-group select { padding: 9px 11px; border: 1.5px solid #d0d5dd; border-radius: 7px; font-size: 0.95rem; font-family: inherit; }
+  .input-group input:focus, .input-group select:focus { outline: none; border-color: #1a3a5c; }
+  .info-box { background: #eef4ff; border-left: 4px solid #1a3a5c; padding: 10px 13px; border-radius: 0 7px 7px 0; font-size: 0.8rem; line-height: 1.6; color: #444; margin: 12px 0; }
+  .subhead { font-size: 0.82rem; font-weight: 700; color: #1a3a5c; margin: 16px 0 8px; padding-bottom: 4px; border-bottom: 1px dashed #d0d5dd; }
+  .btn-calc { width: 100%; padding: 12px; background: #1a3a5c; color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 14px; }
+  .btn-calc:hover { background: #2a5a8c; }
+
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+  .kpi { border-radius: 9px; padding: 14px; text-align: center; border: 1.5px solid; }
+  .kpi.blue   { border-color: #3b82f6; background: #eff6ff; }
+  .kpi.red    { border-color: #f43f5e; background: #fff1f2; }
+  .kpi.green  { border-color: #22c55e; background: #f0fdf4; }
+  .kpi.purple { border-color: #8b5cf6; background: #f5f3ff; }
+  .kpi label  { font-size: 0.75rem; font-weight: 600; color: #555; display: block; margin-bottom: 4px; }
+  .kpi .val   { font-size: 1.05rem; font-weight: 700; }
+  .kpi.blue .val   { color: #1d4ed8; }
+  .kpi.red .val    { color: #be123c; }
+  .kpi.green .val  { color: #15803d; }
+  .kpi.purple .val { color: #6d28d9; }
+
+  table.dt { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  table.dt th { background: #1a3a5c; color: #fff; padding: 8px 12px; text-align: center; }
+  table.dt th:first-child { text-align: left; }
+  table.dt td { padding: 7px 12px; border-bottom: 1px solid #e2e8f0; text-align: right; }
+  table.dt td:first-child { text-align: left; color: #555; }
+  table.dt tr.section td { background: #f0f4f8; font-weight: 700; color: #1a3a5c; text-align: left !important; }
+  table.dt tr.subtotal td { background: #f5f8fc; font-weight: 700; }
+  table.dt tr.total td { background: #dbeafe; font-weight: 700; color: #1a3a5c; }
+  .note { font-size: 0.75rem; color: #888; margin-top: 14px; line-height: 1.7; }
+  @media (max-width: 700px) { .grid2, .grid3, .kpi-row { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>相続税シミュレーション</h1>
+  <p>遺産総額・相続人構成から相続税の概算額を計算します</p>
+</header>
+<div class="container">
+
+  <div class="card">
+    <h2>遺産・相続人情報</h2>
+    <div class="grid2">
+      <div class="input-group">
+        <label>遺産総額（正味の遺産額・円）</label>
+        <input type="number" id="isan" value="80000000" step="1000000" min="0">
+      </div>
+      <div class="input-group">
+        <label>うち死亡保険金（非課税限度内を除く課税分・円）</label>
+        <input type="number" id="hoken" value="0" step="1000000" min="0">
+      </div>
+    </div>
+    <div class="info-box">
+      正味の遺産額 ＝ プラスの財産（現金・預貯金・不動産・有価証券等）― マイナスの財産（借入金・未払金等）― 葬儀費用<br>
+      生命保険金の非課税限度額：500万円 × 法定相続人数（課税対象外）
+    </div>
+
+    <div class="subhead">法定相続人の構成</div>
+    <div class="grid3">
+      <div class="input-group">
+        <label>配偶者</label>
+        <select id="haigusha">
+          <option value="0">いない</option>
+          <option value="1" selected>いる</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>子の数（養子含む）</label>
+        <select id="koNum">
+          <option value="0">0人</option>
+          <option value="1">1人</option>
+          <option value="2" selected>2人</option>
+          <option value="3">3人</option>
+          <option value="4">4人</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>親（子がいない場合）</label>
+        <select id="oyaNum">
+          <option value="0" selected>0人</option>
+          <option value="1">1人</option>
+          <option value="2">2人</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid3" style="margin-top:12px">
+      <div class="input-group">
+        <label>兄弟姉妹（子・親がいない場合）</label>
+        <select id="kyodaiNum">
+          <option value="0" selected>0人</option>
+          <option value="1">1人</option>
+          <option value="2">2人</option>
+          <option value="3">3人</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>未成年の相続人（子）</label>
+        <select id="miseinen">
+          <option value="0" selected>なし</option>
+          <option value="1">1人（残年数10年想定）</option>
+          <option value="2">2人（残年数10年想定）</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>障害者の相続人</label>
+        <select id="shougai">
+          <option value="0" selected>なし</option>
+          <option value="normal">一般障害者（残年数10年想定）</option>
+          <option value="special">特別障害者（残年数10年想定）</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn-calc" onclick="calculate()">計算する</button>
+  </div>
+
+  <div class="card" id="resultCard" style="display:none">
+    <h2>計算結果</h2>
+    <div class="kpi-row" id="kpiRow"></div>
+    <div style="overflow-x:auto"><table class="dt" id="detailTable"></table></div>
+    <p class="note">
+      ※ 配偶者の税額軽減：配偶者が取得する遺産が「法定相続分」か「1億6,000万円」のいずれか大きい額まで非課税。<br>
+      ※ 未成年者控除：18歳になるまでの年数（端数切上） × 10万円。<br>
+      ※ 障害者控除：85歳までの年数 × 10万円（特別障害者は20万円）。<br>
+      ※ 小規模宅地等の特例・農地等の特例は考慮していません。実際の申告は税理士にご相談ください。
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>相続税の税率表</h2>
+    <table class="dt">
+      <thead><tr><th>法定相続分に応ずる取得金額</th><th>税率</th><th>控除額</th></tr></thead>
+      <tbody>
+        <tr><td>1,000万円以下</td><td>10%</td><td>—</td></tr>
+        <tr><td>3,000万円以下</td><td>15%</td><td>50万円</td></tr>
+        <tr><td>5,000万円以下</td><td>20%</td><td>200万円</td></tr>
+        <tr><td>1億円以下</td><td>30%</td><td>700万円</td></tr>
+        <tr><td>2億円以下</td><td>40%</td><td>1,700万円</td></tr>
+        <tr><td>3億円以下</td><td>45%</td><td>2,700万円</td></tr>
+        <tr><td>6億円以下</td><td>50%</td><td>4,200万円</td></tr>
+        <tr><td>6億円超</td><td>55%</td><td>7,200万円</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+function fmt(n){return Math.round(n).toLocaleString('ja-JP')+'円';}
+
+const SOZOKU_TABLE=[
+  [10000000,0.10,0],[30000000,0.15,500000],[50000000,0.20,2000000],
+  [100000000,0.30,7000000],[200000000,0.40,17000000],[300000000,0.45,27000000],
+  [600000000,0.50,42000000],[Infinity,0.55,72000000]
+];
+function calcSozokuZei(amount){
+  if(amount<=0)return 0;
+  for(const [l,r,d] of SOZOKU_TABLE) if(amount<=l) return Math.max(0,amount*r-d);
+  return 0;
+}
+
+function calculate(){
+  const isan      = parseFloat(document.getElementById('isan').value)||0;
+  const hasSpouse = document.getElementById('haigusha').value==='1';
+  const koNum     = parseInt(document.getElementById('koNum').value)||0;
+  const oyaNum    = parseInt(document.getElementById('oyaNum').value)||0;
+  const kyodaiNum = parseInt(document.getElementById('kyodaiNum').value)||0;
+  const miseinen  = parseInt(document.getElementById('miseinen').value)||0;
+  const shougai   = document.getElementById('shougai').value;
+
+  // 法定相続人数（養子は実子がいれば1人、いなければ2人まで）
+  let sozokunin = (hasSpouse?1:0) + koNum + (koNum===0?oyaNum:0) + (koNum===0&&oyaNum===0?kyodaiNum:0);
+
+  // 基礎控除
+  const kiso = 30000000 + 6000000 * sozokunin;
+  const kazeiIsanTotal = Math.max(0, isan - kiso);
+
+  if(kazeiIsanTotal === 0){
+    document.getElementById('kpiRow').innerHTML=`
+      <div class="kpi green" style="grid-column:1/-1;text-align:center">
+        <label>相続税</label><div class="val">0円（基礎控除以下）</div>
+        <div style="font-size:0.8rem;color:#555;margin-top:6px">遺産総額 ${fmt(isan)} ≤ 基礎控除 ${fmt(kiso)}</div>
+      </div>`;
+    document.getElementById('detailTable').innerHTML='';
+    document.getElementById('resultCard').style.display='block';
+    return;
+  }
+
+  // 法定相続分の計算
+  const shares = []; // {name, share, isSpouse}
+  if(hasSpouse){
+    if(koNum>0)        shares.push({name:'配偶者', share:0.5, isSpouse:true});
+    else if(oyaNum>0)  shares.push({name:'配偶者', share:2/3, isSpouse:true});
+    else if(kyodaiNum>0) shares.push({name:'配偶者', share:3/4, isSpouse:true});
+    else               shares.push({name:'配偶者', share:1.0, isSpouse:true});
+  }
+  if(koNum>0){
+    const koShare = (hasSpouse?0.5:1.0)/koNum;
+    for(let i=1;i<=koNum;i++) shares.push({name:`子${i}`, share:koShare, isSpouse:false});
+  } else if(oyaNum>0){
+    const oyaShare = (hasSpouse?1/3:1.0)/oyaNum;
+    for(let i=1;i<=oyaNum;i++) shares.push({name:`親${i}`, share:oyaShare, isSpouse:false});
+  } else if(kyodaiNum>0){
+    const kyodaiShare = (hasSpouse?0.25:1.0)/kyodaiNum;
+    for(let i=1;i<=kyodaiNum;i++) shares.push({name:`兄弟${i}`, share:kyodaiShare, isSpouse:false});
+  }
+
+  // 各人の法定相続分取得金額と税額
+  let sozokuZeiTotal = 0;
+  const personTax = shares.map(s=>{
+    const amt = kazeiIsanTotal * s.share;
+    const tax = calcSozokuZei(amt);
+    sozokuZeiTotal += tax;
+    return {...s, amt, tax};
+  });
+
+  // 各人の実際の税額（按分）
+  const spouseTax = personTax.find(p=>p.isSpouse);
+  let spouseCredit = 0;
+  if(spouseTax){
+    const spouseLimit = Math.max(160000000, isan*0.5);
+    const spouseActual = isan * spouseTax.share;
+    if(spouseActual <= spouseLimit) spouseCredit = sozokuZeiTotal * spouseTax.share;
+  }
+
+  // 未成年控除（残年数×10万）
+  const miseinenCredit = miseinen * 10 * 100000;
+  // 障害者控除
+  let shougaiCredit = 0;
+  if(shougai==='normal') shougaiCredit = 10 * 100000;
+  if(shougai==='special') shougaiCredit = 10 * 200000;
+
+  const totalCredit = spouseCredit + miseinenCredit + shougaiCredit;
+  const nettax = Math.max(0, sozokuZeiTotal - totalCredit);
+  const effectiveRate = isan>0 ? nettax/isan*100 : 0;
+
+  document.getElementById('kpiRow').innerHTML=`
+    <div class="kpi blue"><label>遺産総額</label><div class="val">${fmt(isan)}</div></div>
+    <div class="kpi green"><label>基礎控除</label><div class="val">${fmt(kiso)}</div></div>
+    <div class="kpi red"><label>相続税総額（控除前）</label><div class="val">${fmt(sozokuZeiTotal)}</div></div>
+    <div class="kpi purple"><label>相続税総額（控除後）/ 実効税率</label><div class="val">${fmt(nettax)} / ${effectiveRate.toFixed(1)}%</div></div>`;
+
+  const personRows = personTax.map(p=>`
+    <tr><td>${p.name}</td><td>${(p.share*100).toFixed(2)}%</td><td>${fmt(p.amt)}</td><td>${fmt(p.tax)}</td><td>${fmt(sozokuZeiTotal>0?sozokuZeiTotal*p.share:0)}</td></tr>`).join('');
+
+  document.getElementById('detailTable').innerHTML=`
+    <thead>
+      <tr><th>相続人</th><th>法定相続分</th><th>取得金額（按分）</th><th>税額（按分前）</th><th>負担税額（按分後）</th></tr>
+    </thead>
+    <tbody>
+      <tr class="section"><td colspan="5">▼ 課税遺産総額の計算</td></tr>
+      <tr><td>遺産総額</td><td colspan="4" style="text-align:right">${fmt(isan)}</td></tr>
+      <tr><td>基礎控除（3,000万＋600万×${sozokunin}人）</td><td colspan="4" style="text-align:right">▲${fmt(kiso)}</td></tr>
+      <tr class="subtotal"><td>課税遺産総額</td><td colspan="4" style="text-align:right">${fmt(kazeiIsanTotal)}</td></tr>
+      <tr class="section"><td colspan="5">▼ 相続税の計算（法定相続分で按分）</td></tr>
+      ${personRows}
+      <tr class="subtotal"><td colspan="3">相続税の総額（合算）</td><td colspan="2">${fmt(sozokuZeiTotal)}</td></tr>
+      <tr class="section"><td colspan="5">▼ 税額控除</td></tr>
+      <tr><td>配偶者の税額軽減</td><td colspan="4" style="text-align:right">▲${fmt(spouseCredit)}</td></tr>
+      <tr><td>未成年者控除（${miseinen}人×10年×10万）</td><td colspan="4" style="text-align:right">▲${fmt(miseinenCredit)}</td></tr>
+      <tr><td>障害者控除</td><td colspan="4" style="text-align:right">▲${fmt(shougaiCredit)}</td></tr>
+      <tr class="total"><td colspan="3">相続税総額（控除後）</td><td colspan="2">${fmt(nettax)}</td></tr>
+    </tbody>`;
+
+  document.getElementById('resultCard').style.display='block';
+  document.getElementById('resultCard').scrollIntoView({behavior:'smooth'});
+}
+window.addEventListener('DOMContentLoaded', calculate);
+</script>
+</body>
+</html>
