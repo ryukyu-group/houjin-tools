@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>個人事業主 確定申告シミュレーション</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background: #f5f7fa; color: #333; font-size: 14px; }
+  header { background: #1a3a5c; color: #fff; padding: 20px 24px; }
+  header h1 { font-size: 1.35rem; font-weight: 700; }
+  header p { font-size: 0.82rem; opacity: 0.8; margin-top: 5px; }
+  .container { max-width: 960px; margin: 24px auto; padding: 0 16px 40px; }
+  .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 24px; margin-bottom: 20px; }
+  .card h2 { font-size: 1rem; color: #1a3a5c; border-bottom: 2px solid #1a3a5c; padding-bottom: 8px; margin-bottom: 18px; font-weight: 700; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .input-group { display: flex; flex-direction: column; gap: 5px; }
+  .input-group label { font-size: 0.82rem; color: #555; font-weight: 600; }
+  .input-group input, .input-group select { padding: 9px 11px; border: 1.5px solid #d0d5dd; border-radius: 7px; font-size: 0.95rem; font-family: inherit; }
+  .input-group input:focus, .input-group select:focus { outline: none; border-color: #1a3a5c; }
+  .info-box { background: #eef4ff; border-left: 4px solid #1a3a5c; padding: 10px 13px; border-radius: 0 7px 7px 0; font-size: 0.8rem; line-height: 1.6; color: #444; margin: 10px 0; }
+  .subhead { font-size: 0.82rem; font-weight: 700; color: #1a3a5c; margin: 16px 0 8px; }
+  .btn-calc { width: 100%; padding: 12px; background: #1a3a5c; color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 14px; }
+  .btn-calc:hover { background: #2a5a8c; }
+
+  /* 結果 */
+  .summary-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  .sum-box { background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 9px; padding: 14px; text-align: center; }
+  .sum-box.blue  { border-color: #3b82f6; background: #eff6ff; }
+  .sum-box.red   { border-color: #f43f5e; background: #fff1f2; }
+  .sum-box.green { border-color: #22c55e; background: #f0fdf4; }
+  .sum-box.total { border-color: #1a3a5c; background: #dbeafe; }
+  .sum-box label { font-size: 0.75rem; font-weight: 600; color: #555; display: block; margin-bottom: 4px; }
+  .sum-box .val  { font-size: 1.1rem; font-weight: 700; }
+  .sum-box.blue .val  { color: #1d4ed8; }
+  .sum-box.red .val   { color: #be123c; }
+  .sum-box.green .val { color: #15803d; }
+  .sum-box.total .val { color: #1a3a5c; }
+
+  table.dt { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  table.dt th { background: #1a3a5c; color: #fff; padding: 8px 12px; text-align: left; }
+  table.dt th:last-child { text-align: right; }
+  table.dt td { padding: 7px 12px; border-bottom: 1px solid #e2e8f0; }
+  table.dt td:last-child { text-align: right; }
+  table.dt tr.section td { background: #f0f4f8; font-weight: 700; color: #1a3a5c; font-size: 0.8rem; }
+  table.dt tr.subtotal td { background: #f5f8fc; font-weight: 700; }
+  table.dt tr.total td { background: #dbeafe; font-weight: 700; color: #1a3a5c; font-size: 0.92rem; }
+  .note { font-size: 0.75rem; color: #888; margin-top: 14px; line-height: 1.7; }
+
+  @media (max-width: 700px) { .grid2, .grid3, .summary-row { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 480px) { .grid2, .grid3, .summary-row { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>個人事業主 確定申告シミュレーション</h1>
+  <p>事業所得・所得税・住民税・個人事業税・国民健康保険料を試算します</p>
+</header>
+<div class="container">
+
+  <!-- 収入・経費 -->
+  <div class="card">
+    <h2>収入・経費</h2>
+    <div class="grid2">
+      <div class="input-group">
+        <label>事業収入（売上）（円）</label>
+        <input type="number" id="uriage" value="10000000" step="100000" min="0">
+      </div>
+      <div class="input-group">
+        <label>必要経費（円）</label>
+        <input type="number" id="keihi" value="3000000" step="100000" min="0">
+      </div>
+    </div>
+    <div class="subhead">青色申告</div>
+    <div class="grid2">
+      <div class="input-group">
+        <label>青色申告特別控除</label>
+        <select id="aokiro">
+          <option value="650000" selected>65万円（e-Tax・複式簿記）</option>
+          <option value="550000">55万円（複式簿記・書面申告）</option>
+          <option value="100000">10万円（簡易帳簿）</option>
+          <option value="0">白色申告（0円）</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>専従者給与（青色・円）</label>
+        <input type="number" id="senjusha" value="0" step="100000" min="0">
+      </div>
+    </div>
+  </div>
+
+  <!-- 所得控除 -->
+  <div class="card">
+    <h2>所得控除</h2>
+    <div class="info-box">国民年金・国民健康保険は自動計算されます。その他の控除を入力してください。</div>
+    <div class="grid3">
+      <div class="input-group">
+        <label>配偶者控除（0 or 38万・48万）</label>
+        <select id="haigusha">
+          <option value="0">なし</option>
+          <option value="380000" selected>配偶者控除（38万）</option>
+          <option value="480000">老人配偶者控除（48万）</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>扶養控除（人数）</label>
+        <select id="fuyou">
+          <option value="0" selected>0人</option>
+          <option value="1">1人（一般 38万）</option>
+          <option value="2">2人（一般 76万）</option>
+          <option value="3">3人（一般 114万）</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>生命保険料控除（円）</label>
+        <input type="number" id="seimeiHoken" value="0" step="10000" min="0" max="120000">
+      </div>
+      <div class="input-group">
+        <label>地震保険料控除（円）</label>
+        <input type="number" id="jishin" value="0" step="5000" min="0" max="50000">
+      </div>
+      <div class="input-group">
+        <label>小規模企業共済等掛金控除（円）</label>
+        <input type="number" id="kyosai" value="0" step="10000" min="0">
+      </div>
+      <div class="input-group">
+        <label>医療費控除（円 / 10万超の実支出）</label>
+        <input type="number" id="iryou" value="0" step="10000" min="0">
+      </div>
+      <div class="input-group">
+        <label>ふるさと納税（寄附金控除・円）</label>
+        <input type="number" id="furusato" value="0" step="10000" min="0">
+      </div>
+      <div class="input-group">
+        <label>障害者控除（万）</label>
+        <select id="shougai">
+          <option value="0" selected>なし</option>
+          <option value="270000">普通障害（27万）</option>
+          <option value="400000">特別障害（40万）</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>ひとり親控除（万）</label>
+        <select id="hitorioni">
+          <option value="0" selected>なし</option>
+          <option value="350000">ひとり親（35万）</option>
+        </select>
+      </div>
+    </div>
+    <div class="subhead">個人事業税の業種区分（第三種事業）</div>
+    <div class="grid2">
+      <div class="input-group">
+        <label>業種</label>
+        <select id="gyoshu">
+          <option value="0.05">サービス業・その他（5%）</option>
+          <option value="0.04">畜産業・水産業・薪炭業（4%）</option>
+          <option value="0.03">林業（3%）</option>
+          <option value="nashi">個人事業税非課税</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>都道府県（国保料計算用）</label>
+        <select id="pref">
+          <option value="tokyo" selected>東京都</option>
+          <option value="osaka">大阪府</option>
+          <option value="kanagawa">神奈川県</option>
+          <option value="other">その他（東京都準拠）</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn-calc" onclick="calculate()">計算する</button>
+  </div>
+
+  <!-- 結果 -->
+  <div class="card" id="resultCard" style="display:none">
+    <h2>計算結果</h2>
+    <div class="summary-row" id="summaryRow"></div>
+    <div style="overflow-x:auto"><table class="dt" id="detailTable"></table></div>
+    <p class="note" id="resultNote"></p>
+  </div>
+
+</div>
+
+<script>
+function fmt(n) { return Math.round(n).toLocaleString('ja-JP') + '円'; }
+
+function calcShotokuzei(taxable) {
+  if (taxable <= 0) return 0;
+  const tbl = [[1950000,0.05,0],[3300000,0.10,97500],[6950000,0.20,427500],[9000000,0.23,636000],[18000000,0.33,1536000],[40000000,0.40,2796000],[Infinity,0.45,4796000]];
+  for (const [l,r,d] of tbl) if (taxable <= l) return Math.max(0, taxable*r-d);
+  return 0;
+}
+
+// 国民健康保険料（東京都基準 2024年度）
+function calcKokuho(shotoku) {
+  const kijun = Math.max(0, shotoku - 430000);
+  const iryou = Math.min(kijun * 0.0889 + 48780, 890000);
+  const shien = Math.min(kijun * 0.0290 + 15600, 330000);
+  const kaigo = Math.min(kijun * 0.0251 + 18600, 220000);
+  return iryou + shien + kaigo;
+}
+
+function calculate() {
+  const uriage      = parseFloat(document.getElementById('uriage').value)      || 0;
+  const keihi       = parseFloat(document.getElementById('keihi').value)       || 0;
+  const aokiro      = parseFloat(document.getElementById('aokiro').value)      || 0;
+  const senjusha    = parseFloat(document.getElementById('senjusha').value)    || 0;
+  const haigusha    = parseFloat(document.getElementById('haigusha').value)    || 0;
+  const fuyou       = parseInt(document.getElementById('fuyou').value)         || 0;
+  const seimei      = parseFloat(document.getElementById('seimeiHoken').value) || 0;
+  const jishin      = parseFloat(document.getElementById('jishin').value)      || 0;
+  const kyosai      = parseFloat(document.getElementById('kyosai').value)      || 0;
+  const iryou       = parseFloat(document.getElementById('iryou').value)       || 0;
+  const furusato    = parseFloat(document.getElementById('furusato').value)    || 0;
+  const shougai     = parseFloat(document.getElementById('shougai').value)     || 0;
+  const hitorioni   = parseFloat(document.getElementById('hitorioni').value)   || 0;
+  const gyoshuVal   = document.getElementById('gyoshu').value;
+
+  // 事業所得
+  const jigyoShotoku = Math.max(0, uriage - keihi - senjusha - aokiro);
+
+  // 個人事業税（事業主控除290万）
+  let jigyozei = 0;
+  if (gyoshuVal !== 'nashi') {
+    const rate = parseFloat(gyoshuVal);
+    jigyozei = Math.max(0, (uriage - keihi - senjusha - 2900000) * rate);
+    // 青色申告特別控除は個人事業税の計算に使わない
+  }
+
+  // 国民年金（2024年度: 月16,980円）
+  const kokumin_nenkin = 16980 * 12;
+
+  // 国民健康保険（事業所得ベースで概算）
+  const kokuho = calcKokuho(jigyoShotoku);
+
+  // 課税所得（所得税）
+  const kaseiShotoku = Math.max(0,
+    jigyoShotoku
+    - kokuho          // 国保控除
+    - kokumin_nenkin  // 国民年金控除
+    - kyosai          // 小規模共済
+    - 480000          // 基礎控除
+    - haigusha        // 配偶者控除
+    - fuyou * 380000  // 扶養控除（一般）
+    - seimei          // 生命保険
+    - jishin          // 地震保険
+    - iryou           // 医療費控除
+    - furusato        // 寄附金控除
+    - shougai         // 障害者控除
+    - hitorioni       // ひとり親
+  );
+
+  // 所得税
+  const shotokuzei = calcShotokuzei(kaseiShotoku);
+  const fukko      = shotokuzei * 0.021;
+  const shotokuzeiTotal = shotokuzei + fukko;
+
+  // 住民税（課税所得は基礎控除43万）
+  const kaseiJumin = Math.max(0,
+    jigyoShotoku - kokuho - kokumin_nenkin - kyosai - 430000
+    - haigusha - fuyou * 330000 - seimei - jishin - iryou - furusato - shougai - hitorioni
+  );
+  const juminzei = Math.max(0, kaseiJumin * 0.10 - 2500) + 5000;
+
+  // 合計
+  const goukei = shotokuzeiTotal + juminzei + jigyozei + kokuho + kokumin_nenkin;
+  const tejidori = jigyoShotoku - goukei;
+
+  document.getElementById('summaryRow').innerHTML = `
+    <div class="sum-box blue"><label>事業所得</label><div class="val">${fmt(jigyoShotoku)}</div></div>
+    <div class="sum-box red"><label>所得税＋復興</label><div class="val">${fmt(shotokuzeiTotal)}</div></div>
+    <div class="sum-box red"><label>住民税</label><div class="val">${fmt(juminzei)}</div></div>
+    <div class="sum-box total"><label>税・社保 合計</label><div class="val">${fmt(goukei)}</div></div>`;
+
+  document.getElementById('detailTable').innerHTML = `
+    <thead><tr><th>項目</th><th>金額</th></tr></thead>
+    <tbody>
+      <tr class="section"><td colspan="2">▼ 収入・経費</td></tr>
+      <tr><td>事業収入（売上）</td><td>${fmt(uriage)}</td></tr>
+      <tr><td>必要経費</td><td>▲${fmt(keihi)}</td></tr>
+      <tr><td>専従者給与</td><td>▲${fmt(senjusha)}</td></tr>
+      <tr><td>青色申告特別控除</td><td>▲${fmt(aokiro)}</td></tr>
+      <tr class="subtotal"><td>事業所得</td><td>${fmt(jigyoShotoku)}</td></tr>
+
+      <tr class="section"><td colspan="2">▼ 所得控除（所得税計算用）</td></tr>
+      <tr><td>国民健康保険料（概算）</td><td>▲${fmt(kokuho)}</td></tr>
+      <tr><td>国民年金保険料</td><td>▲${fmt(kokumin_nenkin)}</td></tr>
+      <tr><td>小規模企業共済等掛金</td><td>▲${fmt(kyosai)}</td></tr>
+      <tr><td>基礎控除</td><td>▲${fmt(480000)}</td></tr>
+      <tr><td>配偶者控除</td><td>▲${fmt(haigusha)}</td></tr>
+      <tr><td>扶養控除（${fuyou}人）</td><td>▲${fmt(fuyou * 380000)}</td></tr>
+      <tr><td>生命保険料控除</td><td>▲${fmt(seimei)}</td></tr>
+      <tr><td>地震保険料控除</td><td>▲${fmt(jishin)}</td></tr>
+      <tr><td>医療費控除</td><td>▲${fmt(iryou)}</td></tr>
+      <tr><td>寄附金控除（ふるさと納税等）</td><td>▲${fmt(furusato)}</td></tr>
+      <tr class="subtotal"><td>課税所得（所得税）</td><td>${fmt(kaseiShotoku)}</td></tr>
+
+      <tr class="section"><td colspan="2">▼ 税額</td></tr>
+      <tr><td>所得税</td><td>${fmt(shotokuzei)}</td></tr>
+      <tr><td>復興特別所得税（×2.1%）</td><td>${fmt(fukko)}</td></tr>
+      <tr><td>住民税（所得割10%＋均等割5,000円）</td><td>${fmt(juminzei)}</td></tr>
+      <tr><td>個人事業税</td><td>${fmt(jigyozei)}</td></tr>
+      <tr><td>国民健康保険料</td><td>${fmt(kokuho)}</td></tr>
+      <tr><td>国民年金保険料</td><td>${fmt(kokumin_nenkin)}</td></tr>
+      <tr class="total"><td>合計 税・社会保険</td><td>${fmt(goukei)}</td></tr>
+      <tr class="total"><td>手取り概算（事業所得 − 合計）</td><td>${fmt(tejidori)}</td></tr>
+    </tbody>`;
+
+  document.getElementById('resultNote').innerHTML =
+    '※ 国民健康保険料は東京都2024年度基準（医療分・後期高齢者支援金・介護分の合計）。市区町村により異なります。<br>' +
+    '※ 国民年金：2024年度月額16,980円×12ヶ月。小規模企業共済は月額最大7万円で節税効果あり。<br>' +
+    '※ 住民税の扶養控除額は33万円/人（所得税は38万円）。<br>' +
+    '※ ふるさと納税：所得税は寄附金から2,000円を引いた額が控除対象（所得の40%上限）。住民税控除は別途計算。<br>' +
+    '※ 実際の申告・納税は税理士にご確認ください。';
+
+  document.getElementById('resultCard').style.display = 'block';
+  document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+window.addEventListener('DOMContentLoaded', calculate);
+</script>
+</body>
+</html>

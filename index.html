@@ -10,19 +10,19 @@
   header { background: #1a3a5c; color: #fff; padding: 24px; text-align: center; }
   header h1 { font-size: 1.5rem; font-weight: 700; }
   header p { font-size: 0.85rem; opacity: 0.8; margin-top: 6px; }
-  .container { max-width: 900px; margin: 40px auto; padding: 0 16px 60px; }
-  .section-title { font-size: 0.8rem; font-weight: 700; color: #1a3a5c; text-transform: uppercase; letter-spacing: 0.05em; margin: 32px 0 12px; padding-bottom: 6px; border-bottom: 1px solid #e2e8f0; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+  .container { max-width: 960px; margin: 36px auto; padding: 0 16px 60px; }
+  .section-title { font-size: 0.78rem; font-weight: 700; color: #1a3a5c; text-transform: uppercase; letter-spacing: 0.06em; margin: 28px 0 10px; padding-bottom: 5px; border-bottom: 1px solid #e2e8f0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
   .card {
-    background: #fff; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.07);
-    padding: 22px; text-decoration: none; color: #333; transition: transform 0.18s, box-shadow 0.18s;
-    display: block;
+    background: #fff; border-radius: 11px; box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+    padding: 20px; text-decoration: none; color: #333; transition: transform 0.18s, box-shadow 0.18s;
+    display: flex; flex-direction: column;
   }
   .card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
-  .card .icon { font-size: 1.8rem; margin-bottom: 10px; }
-  .card h2 { font-size: 0.98rem; color: #1a3a5c; margin-bottom: 6px; font-weight: 700; }
-  .card p { font-size: 0.79rem; color: #666; line-height: 1.6; }
-  .card .tag { display: inline-block; background: #eef4ff; color: #1a3a5c; font-size: 0.7rem; padding: 2px 7px; border-radius: 4px; margin-top: 8px; font-weight: 600; }
+  .card .icon { font-size: 1.7rem; margin-bottom: 9px; }
+  .card h2 { font-size: 0.95rem; color: #1a3a5c; margin-bottom: 5px; font-weight: 700; line-height: 1.4; }
+  .card p { font-size: 0.78rem; color: #666; line-height: 1.6; flex: 1; }
+  .card .tag { display: inline-block; background: #eef4ff; color: #1a3a5c; font-size: 0.68rem; padding: 2px 6px; border-radius: 4px; margin-top: 9px; font-weight: 600; }
   footer { text-align: center; color: #aaa; font-size: 0.75rem; padding: 16px; }
 </style>
 </head>
@@ -44,18 +44,24 @@
     <a class="card" href="hojinka-sim.html">
       <div class="icon">🔄</div>
       <h2>法人化シミュレーション</h2>
-      <p>個人事業主のまま vs 法人化した場合の税・社会保険負担を比較。法人化のメリットを試算。</p>
+      <p>個人事業主のまま vs 法人化した場合の税・社保負担を比較。法人化のメリットを試算。</p>
       <span class="tag">個人vs法人</span>
     </a>
   </div>
 
-  <div class="section-title">役員報酬・給与</div>
+  <div class="section-title">役員報酬・給与・源泉</div>
   <div class="grid">
     <a class="card" href="yakuin-hoshu-sim.html">
       <div class="icon">💼</div>
       <h2>役員報酬シミュレーション</h2>
-      <p>役員報酬の金額別に法人税等・個人税等・社会保険料の合計コストを比較。最適な報酬額を検討。</p>
+      <p>役員報酬別に法人税等・個人税等・社保の合計コストを比較。最適報酬額を検討。</p>
       <span class="tag">社会保険込み</span>
+    </a>
+    <a class="card" href="gensen-sim.html">
+      <div class="icon">📋</div>
+      <h2>源泉所得税シミュレーション</h2>
+      <p>給与（月次）・賞与・報酬料金の源泉徴収税額を計算。賞与税額表に対応。</p>
+      <span class="tag">給与・賞与・報酬</span>
     </a>
   </div>
 
@@ -69,12 +75,28 @@
     </a>
   </div>
 
+  <div class="section-title">個人事業主・確定申告</div>
+  <div class="grid">
+    <a class="card" href="kojin-jigyo-sim.html">
+      <div class="icon">📝</div>
+      <h2>個人事業主 確定申告</h2>
+      <p>事業所得・所得税・住民税・個人事業税・国民健康保険料を一括試算。青色申告対応。</p>
+      <span class="tag">青色申告対応</span>
+    </a>
+    <a class="card" href="kokuho-sim.html">
+      <div class="icon">🏥</div>
+      <h2>国保 vs 任意継続 比較</h2>
+      <p>退職後の健康保険を比較。国民健康保険と任意継続の月額・年額・2年合計を算出。</p>
+      <span class="tag">退職後の選択</span>
+    </a>
+  </div>
+
   <div class="section-title">資金・借入</div>
   <div class="grid">
     <a class="card" href="kariire-sim.html">
       <div class="icon">🏦</div>
       <h2>借入返済シミュレーション</h2>
-      <p>元利均等・元金均等を比較。総支払利息・返済スケジュールを一覧表示。据置・ボーナス返済にも対応。</p>
+      <p>元利均等・元金均等を比較。総支払利息・返済スケジュールを表示。据置・ボーナス対応。</p>
       <span class="tag">スケジュール付</span>
     </a>
   </div>

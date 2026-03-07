@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>源泉所得税シミュレーション</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background: #f5f7fa; color: #333; font-size: 14px; }
+  header { background: #1a3a5c; color: #fff; padding: 20px 24px; }
+  header h1 { font-size: 1.35rem; font-weight: 700; }
+  header p { font-size: 0.82rem; opacity: 0.8; margin-top: 5px; }
+  .container { max-width: 900px; margin: 24px auto; padding: 0 16px 40px; }
+  .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 24px; margin-bottom: 20px; }
+  .card h2 { font-size: 1rem; color: #1a3a5c; border-bottom: 2px solid #1a3a5c; padding-bottom: 8px; margin-bottom: 18px; font-weight: 700; }
+  .tab-bar { display: flex; gap: 4px; margin-bottom: 20px; }
+  .tab { padding: 9px 22px; cursor: pointer; font-size: 0.88rem; font-weight: 600; color: #555; border-radius: 7px 7px 0 0; background: #f0f4f8; border: 1.5px solid #d0d5dd; border-bottom: none; }
+  .tab.active { background: #1a3a5c; color: #fff; border-color: #1a3a5c; }
+  .tab-panel { display: none; } .tab-panel.active { display: block; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  .input-group { display: flex; flex-direction: column; gap: 6px; }
+  .input-group label { font-size: 0.82rem; color: #555; font-weight: 600; }
+  .input-group input, .input-group select { padding: 9px 11px; border: 1.5px solid #d0d5dd; border-radius: 7px; font-size: 0.95rem; font-family: inherit; }
+  .input-group input:focus, .input-group select:focus { outline: none; border-color: #1a3a5c; }
+  .info-box { background: #eef4ff; border-left: 4px solid #1a3a5c; padding: 11px 14px; border-radius: 0 7px 7px 0; font-size: 0.82rem; line-height: 1.6; color: #444; margin: 14px 0; }
+  .btn-calc { width: 100%; padding: 12px; background: #1a3a5c; color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 16px; }
+  .btn-calc:hover { background: #2a5a8c; }
+  .result-big { text-align: center; padding: 22px; background: #eff6ff; border-radius: 10px; margin-bottom: 16px; }
+  .result-big .label { font-size: 0.85rem; color: #555; margin-bottom: 4px; }
+  .result-big .amount { font-size: 2rem; font-weight: 700; color: #1d4ed8; }
+  .result-big .sub { font-size: 0.82rem; color: #888; margin-top: 6px; }
+  table.dt { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  table.dt th { background: #f0f4f8; padding: 8px 12px; text-align: left; font-weight: 700; color: #333; }
+  table.dt td { padding: 7px 12px; border-bottom: 1px solid #e2e8f0; }
+  table.dt td:last-child { text-align: right; }
+  table.dt th:last-child { text-align: right; }
+  table.dt tr.total td { background: #eff6ff; font-weight: 700; }
+  .note { font-size: 0.75rem; color: #888; margin-top: 14px; line-height: 1.7; }
+  @media (max-width: 600px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>源泉所得税シミュレーション</h1>
+  <p>給与・報酬・賞与にかかる源泉徴収税額を計算します</p>
+</header>
+<div class="container">
+
+  <div class="tab-bar">
+    <div class="tab active" onclick="switchTab('kyuyo')">給与（月次）</div>
+    <div class="tab" onclick="switchTab('shoyo')">賞与</div>
+    <div class="tab" onclick="switchTab('hoshu')">報酬・料金</div>
+  </div>
+
+  <!-- 給与タブ -->
+  <div class="tab-panel active" id="tab-kyuyo">
+    <div class="card">
+      <h2>給与の源泉徴収（月次・甲欄）</h2>
+      <div class="grid3">
+        <div class="input-group">
+          <label>月額給与（円）</label>
+          <input type="number" id="kyuyo" value="400000" step="10000" min="0">
+        </div>
+        <div class="input-group">
+          <label>社会保険料（月額・本人負担・円）</label>
+          <input type="number" id="shakai" value="55000" step="1000" min="0">
+        </div>
+        <div class="input-group">
+          <label>扶養親族等の数</label>
+          <select id="fuyou">
+            <option value="0" selected>0人</option>
+            <option value="1">1人</option>
+            <option value="2">2人</option>
+            <option value="3">3人</option>
+            <option value="4">4人</option>
+            <option value="5">5人</option>
+            <option value="6">6人</option>
+            <option value="7">7人以上</option>
+          </select>
+        </div>
+      </div>
+      <div class="info-box">
+        甲欄：「給与所得者の扶養控除等申告書」を提出している場合（主たる勤務先）。<br>
+        乙欄（副業等）は一律3.063%（課税給与所得 × 3.063%）を適用。
+      </div>
+      <button class="btn-calc" onclick="calcKyuyo()">計算する</button>
+    </div>
+    <div class="card" id="kyuyoResult" style="display:none">
+      <h2>計算結果</h2>
+      <div class="result-big" id="kyuyoMain"></div>
+      <table class="dt" id="kyuyoDetail"></table>
+      <p class="note">※ 月次の源泉徴収税額は「給与所得の源泉徴収税額表（月額表）甲欄」に基づく概算です。実際の税額と若干異なる場合があります。<br>※ 年末調整により精算されます。</p>
+    </div>
+  </div>
+
+  <!-- 賞与タブ -->
+  <div class="tab-panel" id="tab-shoyo">
+    <div class="card">
+      <h2>賞与の源泉徴収</h2>
+      <div class="grid3">
+        <div class="input-group">
+          <label>賞与額（円）</label>
+          <input type="number" id="shoyo" value="800000" step="10000" min="0">
+        </div>
+        <div class="input-group">
+          <label>前月の社会保険料控除後の給与（円）</label>
+          <input type="number" id="maetsuki" value="345000" step="10000" min="0">
+        </div>
+        <div class="input-group">
+          <label>扶養親族等の数</label>
+          <select id="fuyouShoyo">
+            <option value="0" selected>0人</option>
+            <option value="1">1人</option>
+            <option value="2">2人</option>
+            <option value="3">3人</option>
+            <option value="4">4人</option>
+            <option value="5">5人</option>
+          </select>
+        </div>
+      </div>
+      <div class="info-box">
+        賞与の源泉徴収：「前月の社会保険料控除後の給与」に応じた賞与に対する源泉徴収税額の算出率表を使用します。
+      </div>
+      <button class="btn-calc" onclick="calcShoyo()">計算する</button>
+    </div>
+    <div class="card" id="shoyoResult" style="display:none">
+      <h2>計算結果</h2>
+      <div class="result-big" id="shoyoMain"></div>
+      <table class="dt" id="shoyoDetail"></table>
+      <p class="note">※ 賞与税額表（令和6年分）に基づく概算です。実際には年末調整で精算されます。</p>
+    </div>
+  </div>
+
+  <!-- 報酬タブ -->
+  <div class="tab-panel" id="tab-hoshu">
+    <div class="card">
+      <h2>報酬・料金の源泉徴収</h2>
+      <div class="grid2">
+        <div class="input-group">
+          <label>報酬・料金の種類</label>
+          <select id="hoshuType">
+            <option value="ippan">原稿料・デザイン料・講演料・コンサル料等（一般）</option>
+            <option value="bengoshi">弁護士・税理士・公認会計士・社労士等の報酬</option>
+            <option value="geinou">芸能人・モデル等の役務の提供</option>
+            <option value="naiku">内職・外交員・集金人等（継続的）</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label>報酬・料金（税抜・円）</label>
+          <input type="number" id="hoshu" value="500000" step="10000" min="0">
+        </div>
+      </div>
+      <div class="info-box">
+        報酬・料金の源泉税率：100万円以下 → <strong>10.21%</strong>、100万円超の超過部分 → <strong>20.42%</strong>（復興特別所得税含む）。<br>
+        消費税は原則として報酬に含めず計算（請求書で区分している場合）。
+      </div>
+      <button class="btn-calc" onclick="calcHoshu()">計算する</button>
+    </div>
+    <div class="card" id="hoshuResult" style="display:none">
+      <h2>計算結果</h2>
+      <div class="result-big" id="hoshuMain"></div>
+      <table class="dt" id="hoshuDetail"></table>
+      <p class="note">※ 所得税法第204条に規定する報酬・料金等の源泉徴収税額です。<br>※ 消費税を含む金額で請求されている場合は消費税を除いた金額で計算してください（区分記載がある場合）。<br>※ 支払者が源泉徴収を行い、翌月10日までに納付します。</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    const names = ['kyuyo','shoyo','hoshu'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+function fmt(n) { return Math.round(n).toLocaleString('ja-JP') + '円'; }
+
+// ── 給与所得控除 ────────────────────────────────────────────
+function kyuyoKojo(income) {
+  if (income <= 1625000) return 550000;
+  if (income <= 1800000) return Math.max(income * 0.4 - 100000, 550000);
+  if (income <= 3600000) return income * 0.3 + 80000;
+  if (income <= 6600000) return income * 0.2 + 440000;
+  if (income <= 8500000) return income * 0.1 + 1100000;
+  return 1950000;
+}
+
+// ── 所得税 ────────────────────────────────────────────────
+function calcShotokuzei(taxable) {
+  if (taxable <= 0) return 0;
+  const tbl = [[1950000,0.05,0],[3300000,0.10,97500],[6950000,0.20,427500],[9000000,0.23,636000],[18000000,0.33,1536000],[40000000,0.40,2796000],[Infinity,0.45,4796000]];
+  for (const [l,r,d] of tbl) if (taxable <= l) return Math.max(0, taxable*r-d);
+  return 0;
+}
+
+// ── 給与（月次）────────────────────────────────────────────
+function calcKyuyo() {
+  const kyuyo  = parseFloat(document.getElementById('kyuyo').value)  || 0;
+  const shakai = parseFloat(document.getElementById('shakai').value) || 0;
+  const fuyou  = parseInt(document.getElementById('fuyou').value)    || 0;
+
+  // 社保控除後の給与 → 年収換算
+  const kojogoKyuyo = kyuyo - shakai;
+  const nenKyuyo    = kojogoKyuyo * 12;
+
+  // 給与所得 = 年収 - 給与所得控除
+  const nenShotoku  = Math.max(0, nenKyuyo - kyuyoKojo(nenKyuyo));
+
+  // 課税所得 = 給与所得 - 基礎控除(48万) - 扶養控除(38万/人)
+  const kaseiShotoku = Math.max(0, nenShotoku - 480000 - fuyou * 380000);
+
+  // 年税額（復興特別所得税含む）
+  const nenZei = calcShotokuzei(kaseiShotoku) * 1.021;
+
+  // 月次源泉（1円未満切捨て）
+  const tsukiGensen = Math.floor(nenZei / 12);
+
+  document.getElementById('kyuyoMain').innerHTML = `
+    <div class="label">月次 源泉徴収税額（甲欄・概算）</div>
+    <div class="amount">${fmt(tsukiGensen)}</div>
+    <div class="sub">年間源泉合計（概算）：${fmt(tsukiGensen * 12)}</div>`;
+
+  document.getElementById('kyuyoDetail').innerHTML = `
+    <tr><th>項目</th><th>金額</th></tr>
+    <tr><td>月額給与</td><td>${fmt(kyuyo)}</td></tr>
+    <tr><td>社会保険料（月額）</td><td>▲${fmt(shakai)}</td></tr>
+    <tr><td>社保控除後 給与（月額）</td><td>${fmt(kojogoKyuyo)}</td></tr>
+    <tr><td>年収換算（×12）</td><td>${fmt(nenKyuyo)}</td></tr>
+    <tr><td>給与所得控除</td><td>▲${fmt(kyuyoKojo(nenKyuyo))}</td></tr>
+    <tr><td>給与所得（年）</td><td>${fmt(nenShotoku)}</td></tr>
+    <tr><td>基礎控除</td><td>▲${fmt(480000)}</td></tr>
+    <tr><td>扶養控除（${fuyou}人 × 38万）</td><td>▲${fmt(fuyou * 380000)}</td></tr>
+    <tr><td>課税所得（年）</td><td>${fmt(kaseiShotoku)}</td></tr>
+    <tr><td>年税額（復興特別含む）</td><td>${fmt(nenZei)}</td></tr>
+    <tr class="total"><td>月次 源泉徴収税額</td><td>${fmt(tsukiGensen)}</td></tr>`;
+
+  document.getElementById('kyuyoResult').style.display = 'block';
+  document.getElementById('kyuyoResult').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ── 賞与 ──────────────────────────────────────────────────
+// 賞与に対する源泉徴収税額の算出率表（令和6年）甲欄
+const SHOYO_TABLE = [
+  // [前月給与上限, 扶養0, 1, 2, 3, 4, 5以上]
+  [68000,    0,      0,      0,      0,      0,      0],
+  [79000,    2.042,  0,      0,      0,      0,      0],
+  [88000,    2.042,  0,      0,      0,      0,      0],
+  [98000,    4.084,  2.042,  0,      0,      0,      0],
+  [101000,   4.084,  2.042,  0,      0,      0,      0],
+  [108000,   4.084,  2.042,  0,      0,      0,      0],
+  [118000,   6.126,  4.084,  2.042,  0,      0,      0],
+  [128000,   6.126,  4.084,  2.042,  0,      0,      0],
+  [138000,   6.126,  4.084,  2.042,  0,      0,      0],
+  [149000,   8.168,  6.126,  4.084,  2.042,  0,      0],
+  [160000,   8.168,  6.126,  4.084,  2.042,  0,      0],
+  [171000,   10.21,  8.168,  6.126,  4.084,  2.042,  0],
+  [183000,   10.21,  8.168,  6.126,  4.084,  2.042,  0],
+  [196000,   10.21,  8.168,  6.126,  4.084,  2.042,  0],
+  [210000,   10.21,  10.21,  8.168,  6.126,  4.084,  2.042],
+  [224000,   10.21,  10.21,  8.168,  6.126,  4.084,  2.042],
+  [240000,   10.21,  10.21,  8.168,  6.126,  4.084,  2.042],
+  [257000,   10.21,  10.21,  10.21,  8.168,  6.126,  4.084],
+  [274000,   10.21,  10.21,  10.21,  8.168,  6.126,  4.084],
+  [292000,   10.21,  10.21,  10.21,  8.168,  6.126,  4.084],
+  [312000,   10.21,  10.21,  10.21,  10.21,  8.168,  6.126],
+  [334000,   10.21,  10.21,  10.21,  10.21,  8.168,  6.126],
+  [358000,   10.21,  10.21,  10.21,  10.21,  8.168,  6.126],
+  [383000,   10.21,  10.21,  10.21,  10.21,  10.21,  8.168],
+  [411000,   20.42,  10.21,  10.21,  10.21,  10.21,  8.168],
+  [440000,   20.42,  10.21,  10.21,  10.21,  10.21,  10.21],
+  [472000,   20.42,  20.42,  10.21,  10.21,  10.21,  10.21],
+  [506000,   20.42,  20.42,  10.21,  10.21,  10.21,  10.21],
+  [543000,   20.42,  20.42,  20.42,  10.21,  10.21,  10.21],
+  [583000,   20.42,  20.42,  20.42,  10.21,  10.21,  10.21],
+  [624000,   20.42,  20.42,  20.42,  20.42,  10.21,  10.21],
+  [668000,   20.42,  20.42,  20.42,  20.42,  10.21,  10.21],
+  [716000,   20.42,  20.42,  20.42,  20.42,  20.42,  10.21],
+  [767000,   20.42,  20.42,  20.42,  20.42,  20.42,  20.42],
+  [822000,   20.42,  20.42,  20.42,  20.42,  20.42,  20.42],
+  [Infinity, 20.42,  20.42,  20.42,  20.42,  20.42,  20.42],
+];
+
+function calcShoyo() {
+  const shoyo    = parseFloat(document.getElementById('shoyo').value)    || 0;
+  const maetsuki = parseFloat(document.getElementById('maetsuki').value) || 0;
+  const fuyou    = Math.min(parseInt(document.getElementById('fuyouShoyo').value) || 0, 5);
+
+  // 算出率を探す
+  let rate = 0;
+  for (const row of SHOYO_TABLE) {
+    if (maetsuki < row[0]) { rate = row[fuyou + 1]; break; }
+  }
+
+  const zei = Math.floor(shoyo * rate / 100);
+
+  document.getElementById('shoyoMain').innerHTML = `
+    <div class="label">賞与 源泉徴収税額（甲欄）</div>
+    <div class="amount">${fmt(zei)}</div>
+    <div class="sub">適用税率：${rate}%</div>`;
+
+  document.getElementById('shoyoDetail').innerHTML = `
+    <tr><th>項目</th><th>金額</th></tr>
+    <tr><td>賞与額</td><td>${fmt(shoyo)}</td></tr>
+    <tr><td>前月社保控除後給与</td><td>${fmt(maetsuki)}</td></tr>
+    <tr><td>扶養親族等の数</td><td>${fuyou}人</td></tr>
+    <tr><td>算出率（税額表より）</td><td>${rate}%</td></tr>
+    <tr class="total"><td>源泉徴収税額</td><td>${fmt(zei)}</td></tr>
+    <tr><td>手取り賞与（概算）</td><td>${fmt(shoyo - zei)}</td></tr>`;
+
+  document.getElementById('shoyoResult').style.display = 'block';
+  document.getElementById('shoyoResult').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ── 報酬・料金 ────────────────────────────────────────────
+function calcHoshu() {
+  const hoshu = parseFloat(document.getElementById('hoshu').value) || 0;
+
+  let zei = 0;
+  if (hoshu <= 1000000) {
+    zei = hoshu * 0.1021;
+  } else {
+    zei = 1000000 * 0.1021 + (hoshu - 1000000) * 0.2042;
+  }
+  zei = Math.floor(zei);
+  const type = document.getElementById('hoshuType').options[document.getElementById('hoshuType').selectedIndex].text;
+  const jitokeiri = hoshu - zei;
+
+  document.getElementById('hoshuMain').innerHTML = `
+    <div class="label">源泉徴収税額（復興特別所得税含む）</div>
+    <div class="amount">${fmt(zei)}</div>
+    <div class="sub">実際の支払額（報酬 − 源泉税）：${fmt(jitokeiri)}</div>`;
+
+  document.getElementById('hoshuDetail').innerHTML = `
+    <tr><th>項目</th><th>金額</th></tr>
+    <tr><td>報酬・料金の種類</td><td colspan="0">${type.substring(0, 20)}…</td></tr>
+    <tr><td>報酬・料金（税抜）</td><td>${fmt(hoshu)}</td></tr>
+    <tr><td>100万円以下の部分 × 10.21%</td><td>${fmt(Math.min(hoshu, 1000000) * 0.1021)}</td></tr>
+    ${hoshu > 1000000 ? `<tr><td>100万円超の部分 × 20.42%</td><td>${fmt((hoshu - 1000000) * 0.2042)}</td></tr>` : ''}
+    <tr class="total"><td>源泉徴収税額</td><td>${fmt(zei)}</td></tr>
+    <tr><td>実際の支払額</td><td>${fmt(jitokeiri)}</td></tr>`;
+
+  document.getElementById('hoshuResult').style.display = 'block';
+  document.getElementById('hoshuResult').scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
