@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>貸倒引当金 法定繰入率・繰入限度額 計算</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background: #f5f7fa; color: #333; font-size: 14px; }
+  header { background: #1a3a5c; color: #fff; padding: 20px 24px; }
+  header h1 { font-size: 1.35rem; font-weight: 700; }
+  header p { font-size: 0.82rem; opacity: 0.8; margin-top: 5px; }
+  .container { max-width: 800px; margin: 24px auto; padding: 0 16px 40px; }
+  .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 24px; margin-bottom: 20px; }
+  .card h2 { font-size: 1rem; color: #1a3a5c; border-bottom: 2px solid #1a3a5c; padding-bottom: 8px; margin-bottom: 18px; font-weight: 700; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .input-group { display: flex; flex-direction: column; gap: 5px; }
+  .input-group label { font-size: 0.82rem; color: #555; font-weight: 600; }
+  .input-group input, .input-group select { padding: 8px 10px; border: 1.5px solid #d0d5dd; border-radius: 7px; font-size: 0.9rem; font-family: inherit; }
+  .input-group input:focus, .input-group select:focus { outline: none; border-color: #1a3a5c; }
+  .input-group .hint { font-size: 0.75rem; color: #888; line-height: 1.5; }
+  .info-box { background: #eef4ff; border-left: 4px solid #1a3a5c; padding: 10px 13px; border-radius: 0 7px 7px 0; font-size: 0.8rem; line-height: 1.6; color: #444; margin: 12px 0; }
+  .btn-calc { padding: 11px 28px; background: #1a3a5c; color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 14px; }
+  .btn-calc:hover { background: #2a5a8c; }
+  .subhead { font-size: 0.85rem; font-weight: 700; color: #1a3a5c; margin: 16px 0 10px; border-left: 3px solid #1a3a5c; padding-left: 8px; }
+  .result-box { background: #dbeafe; border-radius: 10px; padding: 20px; margin-bottom: 16px; text-align: center; }
+  .result-box .r-label { font-size: 0.82rem; color: #555; margin-bottom: 6px; }
+  .result-box .r-val { font-size: 2rem; font-weight: 700; color: #1a3a5c; }
+  .result-box .r-sub { font-size: 0.8rem; color: #666; margin-top: 6px; }
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .result-item { background: #f8fafc; border-radius: 8px; padding: 12px 16px; }
+  .result-item .ri-label { font-size: 0.78rem; color: #666; margin-bottom: 4px; }
+  .result-item .ri-val { font-size: 1.1rem; font-weight: 700; color: #1a3a5c; }
+  table.rate { border-collapse: collapse; width: 100%; font-size: 0.82rem; }
+  table.rate th { background: #f0f4f8; color: #444; padding: 7px 10px; text-align: left; font-weight: 600; border-bottom: 1px solid #e2e8f0; }
+  table.rate td { padding: 6px 10px; border-bottom: 1px solid #f0f4f8; }
+  table.rate td:last-child { text-align: right; font-weight: 600; }
+  table.rate tr.active td { background: #dbeafe; color: #1a3a5c; font-weight: 700; }
+  .formula { background: #f8fafc; border-radius: 8px; padding: 14px; font-size: 0.82rem; color: #555; line-height: 1.8; margin: 12px 0; }
+  .formula strong { color: #1a3a5c; }
+  .note { font-size: 0.75rem; color: #888; margin-top: 14px; line-height: 1.7; }
+  a.back { display: inline-block; margin-bottom: 16px; color: #1a3a5c; font-size: 0.85rem; text-decoration: none; }
+  a.back:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<header>
+  <h1>貸倒引当金 法定繰入率・繰入限度額 計算</h1>
+  <p>一括評価金銭債権の貸倒引当金繰入限度額を業種別法定繰入率で自動計算します</p>
+</header>
+<div class="container">
+  <a class="back" href="index.html">← ツール一覧に戻る</a>
+
+  <div class="card">
+    <h2>基本設定</h2>
+    <div class="info-box">
+      中小法人（資本金1億円以下等）および個人事業主は、一括評価金銭債権に対して業種別の法定繰入率を使って貸倒引当金の繰入限度額を計算できます（法人税法52条・所得税法52条）。
+    </div>
+    <div class="grid2">
+      <div class="input-group">
+        <label>事業者区分</label>
+        <select id="jigyosha">
+          <option value="hojin">中小法人（資本金1億円以下等）</option>
+          <option value="kojin">個人事業主</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>業種</label>
+        <select id="gyoshu" onchange="updateRate()">
+          <option value="oroshi">卸売業</option>
+          <option value="kouri">小売業・飲食業</option>
+          <option value="seizou">製造業</option>
+          <option value="kinyu">金融業・保険業</option>
+          <option value="sonota" selected>その他の事業</option>
+        </select>
+      </div>
+    </div>
+    <div class="subhead">一括評価金銭債権の期末残高</div>
+    <div class="info-box">売掛金・受取手形・貸付金（個人間・関係会社間を除く）等の合計額を入力してください。</div>
+    <div class="grid2">
+      <div class="input-group">
+        <label>売掛金（円）</label>
+        <input type="number" id="urikake" value="5000000" step="100000" min="0">
+      </div>
+      <div class="input-group">
+        <label>受取手形（円）</label>
+        <input type="number" id="tegata" value="1000000" step="100000" min="0">
+      </div>
+      <div class="input-group">
+        <label>貸付金（円）</label>
+        <input type="number" id="kashikin" value="0" step="100000" min="0">
+      </div>
+      <div class="input-group">
+        <label>その他の金銭債権（円）</label>
+        <input type="number" id="sonota" value="0" step="100000" min="0">
+      </div>
+    </div>
+    <div class="subhead">控除額</div>
+    <div class="grid2">
+      <div class="input-group">
+        <label>実質的に債権と見られない金額（円）</label>
+        <input type="number" id="jissitsu_kojo" value="0" step="100000" min="0">
+        <span class="hint">同一取引先に対する買掛金等との相殺額など</span>
+      </div>
+      <div class="input-group">
+        <label>個別評価分（貸倒懸念債権・破産等・円）</label>
+        <input type="number" id="kobetsu" value="0" step="100000" min="0">
+        <span class="hint">個別評価した債権は一括評価から除外</span>
+      </div>
+    </div>
+    <button class="btn-calc" onclick="calculate()">計算する</button>
+  </div>
+
+  <div class="card" id="resultCard" style="display:none">
+    <h2>計算結果</h2>
+    <div class="result-box">
+      <div class="r-label">貸倒引当金 繰入限度額</div>
+      <div class="r-val" id="limitVal">—</div>
+      <div class="r-sub" id="limitSub"></div>
+    </div>
+    <div class="result-grid">
+      <div class="result-item">
+        <div class="ri-label">一括評価金銭債権 合計</div>
+        <div class="ri-val" id="saikensouVal">—</div>
+      </div>
+      <div class="result-item">
+        <div class="ri-label">控除後 対象債権額</div>
+        <div class="ri-val" id="taishoVal">—</div>
+      </div>
+      <div class="result-item">
+        <div class="ri-label">適用業種</div>
+        <div class="ri-val" id="gyoshuVal">—</div>
+      </div>
+      <div class="result-item">
+        <div class="ri-label">法定繰入率</div>
+        <div class="ri-val" id="rateVal">—</div>
+      </div>
+    </div>
+
+    <div class="subhead">計算式</div>
+    <div class="formula" id="formulaDiv"></div>
+
+    <div class="subhead">業種別 法定繰入率 一覧</div>
+    <table class="rate" id="rateTable"></table>
+
+    <p class="note">※ 法定繰入率による方法と実績繰入率による方法のいずれか有利な方を選択できます（中小法人・個人事業主）。貸倒引当金の適用には要件があります。詳細は税理士にご確認ください。<br>
+    ※ 実績繰入率 ＝ 過去3年間の貸倒損失額の合計 ÷ 過去3年間の期末金銭債権合計 × 1/2 で計算します。</p>
+  </div>
+
+  <div class="card">
+    <h2>業種判定のポイント</h2>
+    <table class="rate">
+      <thead><tr><th>業種</th><th>法定繰入率</th><th>主な対象業種の例</th></tr></thead>
+      <tbody>
+        <tr><td>卸売業</td><td style="text-align:right">1.0/1000（0.1%）</td><td>商品の卸売を主な事業とする法人・個人</td></tr>
+        <tr><td>小売業・飲食業</td><td style="text-align:right">1.0/1000（0.1%）</td><td>小売店、飲食店、コンビニ等</td></tr>
+        <tr><td>製造業</td><td style="text-align:right">0.8/1000（0.08%）</td><td>物品の製造・加工業</td></tr>
+        <tr><td>金融業・保険業</td><td style="text-align:right">0.3/1000（0.03%）</td><td>貸金業、保険代理業等</td></tr>
+        <tr><td>その他の事業</td><td style="text-align:right">0.6/1000（0.06%）</td><td>サービス業、建設業、不動産業、IT業等</td></tr>
+      </tbody>
+    </table>
+    <p class="note" style="margin-top:10px">※ 2以上の事業を営む場合は、主たる事業の業種で判定します。</p>
+  </div>
+</div>
+
+<script>
+const RATES = {
+  oroshi:  { label: '卸売業',        rate: 10/10000 },
+  kouri:   { label: '小売業・飲食業', rate: 10/10000 },
+  seizou:  { label: '製造業',        rate: 8/10000  },
+  kinyu:   { label: '金融業・保険業', rate: 3/10000  },
+  sonota:  { label: 'その他の事業',   rate: 6/10000  },
+};
+
+function updateRate() {
+  // 選択時にリアルタイムで率を表示するだけ（計算はボタン押下）
+}
+
+function calculate() {
+  const gyoshu = document.getElementById('gyoshu').value;
+  const jigyosha = document.getElementById('jigyosha').value;
+  const { label: gyoshuLabel, rate } = RATES[gyoshu];
+
+  const urikake = parseFloat(document.getElementById('urikake').value) || 0;
+  const tegata  = parseFloat(document.getElementById('tegata').value)  || 0;
+  const kashi   = parseFloat(document.getElementById('kashikin').value)|| 0;
+  const sonota  = parseFloat(document.getElementById('sonota').value)  || 0;
+  const jissitsu = parseFloat(document.getElementById('jissitsu_kojo').value) || 0;
+  const kobetsu  = parseFloat(document.getElementById('kobetsu').value) || 0;
+
+  const saiken = urikake + tegata + kashi + sonota;
+  const taisho = Math.max(saiken - jissitsu - kobetsu, 0);
+  const limit  = Math.floor(taisho * rate);
+
+  const fmt = n => Math.round(n).toLocaleString('ja-JP') + ' 円';
+  const fmtN = n => Math.round(n).toLocaleString('ja-JP');
+  const ratePct = (rate * 1000).toFixed(1) + '/1000';
+
+  document.getElementById('limitVal').textContent = fmt(limit);
+  document.getElementById('limitSub').textContent = `${gyoshuLabel} 法定繰入率 ${ratePct}`;
+  document.getElementById('saikensouVal').textContent = fmt(saiken);
+  document.getElementById('taishoVal').textContent = fmt(taisho);
+  document.getElementById('gyoshuVal').textContent = gyoshuLabel;
+  document.getElementById('rateVal').textContent = ratePct + '（' + (rate * 100).toFixed(3) + '%）';
+
+  document.getElementById('formulaDiv').innerHTML = `
+    <strong>一括評価金銭債権合計</strong>：<br>
+    　売掛金 ${fmtN(urikake)} + 受取手形 ${fmtN(tegata)} + 貸付金 ${fmtN(kashi)} + その他 ${fmtN(sonota)} ＝ ${fmtN(saiken)} 円<br><br>
+    <strong>控除後 対象債権額</strong>：<br>
+    　${fmtN(saiken)} − 実質的に債権でない額 ${fmtN(jissitsu)} − 個別評価分 ${fmtN(kobetsu)} ＝ ${fmtN(taisho)} 円<br><br>
+    <strong>繰入限度額</strong>：<br>
+    　${fmtN(taisho)} 円 × ${ratePct} ＝ <strong>${fmtN(limit)} 円</strong>
+  `;
+
+  // 率一覧テーブル（現在選択中を強調）
+  const rows = Object.entries(RATES).map(([key, { label, rate: r }]) => {
+    const isActive = key === gyoshu;
+    return `<tr class="${isActive ? 'active' : ''}">
+      <td>${label}</td>
+      <td>${(r * 1000).toFixed(1)}/1000（${(r * 100).toFixed(3)}%）</td>
+      <td>${isActive ? fmtN(limit) + ' 円' : '—'}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('rateTable').innerHTML = `
+    <thead><tr><th>業種</th><th>法定繰入率</th><th>繰入限度額（本件）</th></tr></thead>
+    <tbody>${rows}</tbody>`;
+
+  document.getElementById('resultCard').style.display = 'block';
+  document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+window.addEventListener('DOMContentLoaded', calculate);
+</script>
+</body>
+</html>

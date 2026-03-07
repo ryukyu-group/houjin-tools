@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>インボイス登録シミュレーション</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background: #f5f7fa; color: #333; font-size: 14px; }
+  header { background: #1a3a5c; color: #fff; padding: 20px 24px; }
+  header h1 { font-size: 1.35rem; font-weight: 700; }
+  header p { font-size: 0.82rem; opacity: 0.8; margin-top: 5px; }
+  .container { max-width: 860px; margin: 24px auto; padding: 0 16px 40px; }
+  .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 24px; margin-bottom: 20px; }
+  .card h2 { font-size: 1rem; color: #1a3a5c; border-bottom: 2px solid #1a3a5c; padding-bottom: 8px; margin-bottom: 18px; font-weight: 700; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .input-group { display: flex; flex-direction: column; gap: 5px; }
+  .input-group label { font-size: 0.82rem; color: #555; font-weight: 600; }
+  .input-group input, .input-group select { padding: 8px 10px; border: 1.5px solid #d0d5dd; border-radius: 7px; font-size: 0.9rem; font-family: inherit; }
+  .input-group input:focus, .input-group select:focus { outline: none; border-color: #1a3a5c; }
+  .input-group .hint { font-size: 0.75rem; color: #888; line-height: 1.5; }
+  .info-box { background: #eef4ff; border-left: 4px solid #1a3a5c; padding: 10px 13px; border-radius: 0 7px 7px 0; font-size: 0.8rem; line-height: 1.6; color: #444; margin: 12px 0; }
+  .warn-box { background: #fff7ed; border-left: 4px solid #ea580c; padding: 10px 13px; border-radius: 0 7px 7px 0; font-size: 0.8rem; line-height: 1.6; color: #444; margin: 12px 0; }
+  .btn-calc { padding: 11px 28px; background: #1a3a5c; color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 14px; }
+  .btn-calc:hover { background: #2a5a8c; }
+  .subhead { font-size: 0.85rem; font-weight: 700; color: #1a3a5c; margin: 16px 0 10px; border-left: 3px solid #1a3a5c; padding-left: 8px; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  .kpi { background: #f8fafc; border-radius: 10px; padding: 14px 16px; }
+  .kpi.blue { background: #dbeafe; }
+  .kpi.green { background: #dcfce7; }
+  .kpi.red { background: #fee2e2; }
+  .kpi.orange { background: #ffedd5; }
+  .kpi .kpi-label { font-size: 0.75rem; color: #555; margin-bottom: 4px; }
+  .kpi .kpi-val { font-size: 1.15rem; font-weight: 700; color: #1a3a5c; }
+  .kpi.green .kpi-val { color: #15803d; }
+  .kpi.red .kpi-val { color: #dc2626; }
+  .kpi.orange .kpi-val { color: #c2410c; }
+  .verdict { border-radius: 10px; padding: 18px 20px; margin-bottom: 16px; }
+  .verdict.reg { background: #dcfce7; border: 2px solid #16a34a; }
+  .verdict.noreg { background: #fee2e2; border: 2px solid #dc2626; }
+  .verdict.neutral { background: #f0f9ff; border: 2px solid #0284c7; }
+  .verdict h3 { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+  .verdict.reg h3 { color: #15803d; }
+  .verdict.noreg h3 { color: #dc2626; }
+  .verdict.neutral h3 { color: #0369a1; }
+  .verdict p { font-size: 0.82rem; line-height: 1.7; color: #444; }
+  table.ct { border-collapse: collapse; width: 100%; font-size: 0.82rem; margin-bottom: 14px; }
+  table.ct th { background: #1a3a5c; color: #fff; padding: 7px 10px; text-align: right; }
+  table.ct th:first-child { text-align: left; }
+  table.ct td { padding: 6px 10px; border-bottom: 1px solid #f0f4f8; text-align: right; }
+  table.ct td:first-child { text-align: left; color: #555; }
+  table.ct tr.total td { background: #dbeafe; font-weight: 700; color: #1a3a5c; }
+  .note { font-size: 0.75rem; color: #888; margin-top: 14px; line-height: 1.7; }
+  a.back { display: inline-block; margin-bottom: 16px; color: #1a3a5c; font-size: 0.85rem; text-decoration: none; }
+  a.back:hover { text-decoration: underline; }
+  .toggle-section { display: none; }
+  .toggle-section.active { display: block; }
+</style>
+</head>
+<body>
+<header>
+  <h1>インボイス登録シミュレーション</h1>
+  <p>適格請求書発行事業者への登録の要否・メリット・デメリットを試算します</p>
+</header>
+<div class="container">
+  <a class="back" href="index.html">← ツール一覧に戻る</a>
+
+  <div class="card">
+    <h2>基本情報</h2>
+    <div class="grid2">
+      <div class="input-group">
+        <label>現在の消費税の納税義務</label>
+        <select id="nouzeimu" onchange="toggleSections()">
+          <option value="menjo">免税事業者（年商1,000万円以下など）</option>
+          <option value="kazei">課税事業者（年商1,000万円超 等）</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>年間売上高（税抜・円）</label>
+        <input type="number" id="uriage" value="5000000" step="100000" min="1">
+      </div>
+    </div>
+    <div class="grid2" style="margin-top:14px">
+      <div class="input-group">
+        <label>取引先の割合：法人・課税事業者（%）</label>
+        <input type="number" id="b2b_pct" value="80" step="5" min="0" max="100">
+        <span class="hint">インボイスを要求される可能性がある取引先の割合</span>
+      </div>
+      <div class="input-group">
+        <label>業種</label>
+        <select id="gyoshu">
+          <option value="service">サービス業・その他（みなし仕入率50%）</option>
+          <option value="retail">小売業・飲食業（みなし仕入率60%）</option>
+          <option value="wholesale">卸売業（みなし仕入率90%）</option>
+          <option value="construction">建設業・製造業（みなし仕入率70%）</option>
+          <option value="finance">金融・保険業（みなし仕入率40%）</option>
+          <option value="real_estate">不動産業（みなし仕入率40%）</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- 免税事業者用セクション -->
+  <div class="toggle-section active" id="sectionMenjo">
+    <div class="card">
+      <h2>免税事業者の場合の詳細設定</h2>
+      <div class="info-box">インボイス登録すると消費税の納税義務が発生します。2割特例（2023〜2025年）・簡易課税・本則課税の各方式で税負担を比較します。</div>
+      <div class="grid3">
+        <div class="input-group">
+          <label>実際の仕入・経費（税込・円）</label>
+          <input type="number" id="shiire" value="2000000" step="100000" min="0">
+          <span class="hint">本則課税の仕入税額控除に使用</span>
+        </div>
+        <div class="input-group">
+          <label>2割特例の適用</label>
+          <select id="waribiki_toku">
+            <option value="1" selected>適用あり（2023〜2025年登録）</option>
+            <option value="0">適用なし</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label>取引先が求める対応</label>
+          <select id="torihiki_req">
+            <option value="price_cut">値引き要求（消費税相当分）</option>
+            <option value="lost" selected>取引打ち切りリスクあり</option>
+            <option value="none">特に要求なし（B2C中心）</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn-calc" onclick="calculate()">計算する</button>
+    </div>
+  </div>
+
+  <!-- 課税事業者用セクション -->
+  <div class="toggle-section" id="sectionKazei">
+    <div class="card">
+      <h2>課税事業者の場合</h2>
+      <div class="warn-box">課税事業者は原則としてインボイス登録することを強くおすすめします。登録しないと取引先が仕入税額控除を受けられず、取引停止・値引き要求のリスクがあります。</div>
+      <button class="btn-calc" onclick="calculate()">詳細を計算する</button>
+    </div>
+  </div>
+
+  <div class="card" id="resultCard" style="display:none">
+    <h2>シミュレーション結果</h2>
+    <div id="verdictDiv"></div>
+
+    <div class="subhead" id="kpiTitle"></div>
+    <div class="kpi-grid" id="kpiGrid"></div>
+
+    <div id="tableArea"></div>
+
+    <p class="note" id="resultNote"></p>
+  </div>
+</div>
+
+<script>
+const MINSHU_RATE = { service: 0.50, retail: 0.60, wholesale: 0.90, construction: 0.70, finance: 0.40, real_estate: 0.40 };
+
+function toggleSections() {
+  const v = document.getElementById('nouzeimu').value;
+  document.getElementById('sectionMenjo').classList.toggle('active', v === 'menjo');
+  document.getElementById('sectionKazei').classList.toggle('active', v === 'kazei');
+}
+
+function calculate() {
+  const nouzeimu = document.getElementById('nouzeimu').value;
+  const uriage = parseFloat(document.getElementById('uriage').value) || 0;
+  const b2bPct = (parseFloat(document.getElementById('b2b_pct').value) || 0) / 100;
+  const gyoshu = document.getElementById('gyoshu').value;
+  const minshuRate = MINSHU_RATE[gyoshu];
+
+  const fmt = n => Math.round(n).toLocaleString('ja-JP');
+
+  if (nouzeimu === 'kazei') {
+    // 課税事業者
+    const b2bUriage = uriage * b2bPct;
+    document.getElementById('kpiTitle').textContent = '課税事業者のインボイス影響';
+    document.getElementById('kpiGrid').innerHTML = `
+      <div class="kpi blue"><div class="kpi-label">法人・BtoB売上高</div><div class="kpi-val">${fmt(b2bUriage)} 円</div></div>
+      <div class="kpi red"><div class="kpi-label">未登録時の取引リスク額</div><div class="kpi-val">${fmt(b2bUriage)} 円</div></div>
+      <div class="kpi orange"><div class="kpi-label">取引先が失う仕入税額控除</div><div class="kpi-val">${fmt(b2bUriage / 11)} 円</div></div>
+    `;
+    document.getElementById('verdictDiv').innerHTML = `
+      <div class="verdict reg">
+        <h3>登録を強くおすすめします</h3>
+        <p>課税事業者はすでに消費税を納税しています。インボイス登録することで取引先が仕入税額控除を使えるようになり、取引関係を維持できます。登録しない場合、BtoB取引 ${fmt(b2bUriage)} 円に対して取引停止・値引き要求のリスクがあります。</p>
+      </div>`;
+    document.getElementById('tableArea').innerHTML = '';
+    document.getElementById('resultNote').textContent = '※ 課税事業者がインボイス登録しても消費税の納税額は変わりません。取引先との関係維持のために登録することが一般的です。';
+    document.getElementById('resultCard').style.display = 'block';
+    document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+    return;
+  }
+
+  // 免税事業者
+  const shiire = parseFloat(document.getElementById('shiire').value) || 0;
+  const wariToku = document.getElementById('waribiki_toku').value === '1';
+  const req = document.getElementById('torihiki_req').value;
+
+  const uriageTax = uriage * 0.1; // 売上消費税（10%想定）
+
+  // 2割特例
+  const tax2wari = wariToku ? Math.floor(uriageTax * 0.2) : null;
+
+  // 簡易課税
+  const taxKanni = Math.floor(uriageTax * (1 - minshuRate));
+
+  // 本則課税
+  const shiirezei = Math.floor(shiire / 1.1 * 0.1);
+  const taxHonsoku = Math.max(Math.floor(uriageTax - shiirezei), 0);
+
+  // 取引リスク試算
+  const b2bUriage = uriage * b2bPct;
+  const riskAmt = req === 'lost' ? b2bUriage : (req === 'price_cut' ? b2bUriage / 11 : 0);
+  const riskLabel = req === 'lost' ? '取引打ち切りリスク（BtoB売上）' : (req === 'price_cut' ? '値引き要求額（消費税相当）' : '取引リスク（ほぼなし）');
+
+  // 最安の税負担
+  const taxOptions = wariToku ? [tax2wari, taxKanni, taxHonsoku] : [taxKanni, taxHonsoku];
+  const minTax = Math.min(...taxOptions);
+
+  // 判定
+  let verdictClass, verdictTitle, verdictText;
+  if (riskAmt === 0) {
+    verdictClass = 'neutral';
+    verdictTitle = 'B2C中心のため、登録は任意';
+    verdictText = `B2C（一般消費者）中心の事業はインボイスを必要としない取引先が多く、未登録のままでも影響は限定的です。ただし今後B2B取引が増える場合は登録を検討してください。`;
+  } else if (minTax < riskAmt) {
+    verdictClass = 'reg';
+    verdictTitle = '登録を推奨します（税負担 < 取引リスク）';
+    verdictText = `登録した場合の最小税負担額 ${fmt(minTax)} 円に対し、未登録の場合の取引リスク額は ${fmt(riskAmt)} 円です。税負担より取引リスクの方が大きいため、インボイス登録が有利です。`;
+  } else {
+    verdictClass = 'noreg';
+    verdictTitle = '登録は慎重に判断してください（税負担 > 取引リスク）';
+    verdictText = `登録した場合の最小税負担額 ${fmt(minTax)} 円に対し、未登録の場合の取引リスク額は ${fmt(riskAmt)} 円です。税負担の方が大きい場合がありますが、取引先との関係や将来の事業規模も考慮してください。`;
+  }
+
+  document.getElementById('verdictDiv').innerHTML = `
+    <div class="verdict ${verdictClass}">
+      <h3>${verdictTitle}</h3>
+      <p>${verdictText}</p>
+    </div>`;
+
+  document.getElementById('kpiTitle').textContent = '登録した場合の消費税負担（年間）';
+  const kpis = [];
+  if (wariToku) kpis.push(`<div class="kpi blue"><div class="kpi-label">2割特例（〜2025年）</div><div class="kpi-val">${fmt(tax2wari)} 円</div></div>`);
+  kpis.push(`<div class="kpi"><div class="kpi-label">簡易課税</div><div class="kpi-val">${fmt(taxKanni)} 円</div></div>`);
+  kpis.push(`<div class="kpi"><div class="kpi-label">本則課税</div><div class="kpi-val">${fmt(taxHonsoku)} 円</div></div>`);
+  kpis.push(`<div class="kpi ${riskAmt > 0 ? 'orange' : 'green'}"><div class="kpi-label">${riskLabel}</div><div class="kpi-val">${fmt(riskAmt)} 円</div></div>`);
+  document.getElementById('kpiGrid').innerHTML = kpis.join('');
+
+  // 比較テーブル
+  const rows = [];
+  if (wariToku) rows.push(['2割特例（登録・〜2025年）', fmt(tax2wari) + ' 円', '売上消費税×20%', '最も簡便']);
+  rows.push(['簡易課税（登録・届出要）', fmt(taxKanni) + ' 円', `みなし仕入率 ${Math.round(minshuRate * 100)}%`, '届出が必要']);
+  rows.push(['本則課税（登録）', fmt(taxHonsoku) + ' 円', '実際の仕入税額控除', '帳簿管理が必要']);
+  rows.push(['未登録（免税継続）', '0 円', '—', riskAmt > 0 ? `取引リスク ${fmt(riskAmt)} 円` : 'B2C中心なら問題小']);
+
+  const trs = rows.map(([label, tax, note, remark]) =>
+    `<tr><td>${label}</td><td>${tax}</td><td>${note}</td><td>${remark}</td></tr>`
+  ).join('');
+
+  document.getElementById('tableArea').innerHTML = `
+    <div class="subhead">方式別比較</div>
+    <table class="ct">
+      <thead><tr><th style="text-align:left">方式</th><th>消費税負担</th><th>計算根拠</th><th>備考</th></tr></thead>
+      <tbody>${trs}</tbody>
+    </table>`;
+
+  document.getElementById('resultNote').textContent =
+    '※ 2割特例は2023〜2025年（令和5〜7年）分の申告に適用可能（期間延長の可能性あり）。簡易課税は前々年度売上5,000万円以下が要件。本則課税の仕入税額は入力値をもとに概算計算しています。実際の判断は税理士にご相談ください。';
+
+  document.getElementById('resultCard').style.display = 'block';
+  document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  toggleSections();
+});
+</script>
+</body>
+</html>
