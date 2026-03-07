@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>役員報酬シミュレーション</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background: #f5f7fa; color: #333; font-size: 14px; }
+  header { background: #1a3a5c; color: #fff; padding: 20px 24px; }
+  header h1 { font-size: 1.35rem; font-weight: 700; }
+  header p { font-size: 0.82rem; opacity: 0.8; margin-top: 5px; }
+  .container { max-width: 1000px; margin: 24px auto; padding: 0 16px 40px; }
+  .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 24px; margin-bottom: 20px; }
+  .card h2 { font-size: 1rem; color: #1a3a5c; border-bottom: 2px solid #1a3a5c; padding-bottom: 8px; margin-bottom: 18px; font-weight: 700; }
+  .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .input-group { display: flex; flex-direction: column; gap: 6px; }
+  .input-group label { font-size: 0.82rem; color: #555; font-weight: 600; }
+  .input-group input, .input-group select {
+    padding: 9px 11px; border: 1.5px solid #d0d5dd; border-radius: 7px;
+    font-size: 0.95rem; font-family: inherit; transition: border-color 0.2s;
+  }
+  .input-group input:focus, .input-group select:focus { outline: none; border-color: #1a3a5c; }
+  .plan-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 18px; }
+  .plan-col { background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 9px; padding: 16px; }
+  .plan-col h3 { font-size: 0.9rem; color: #1a3a5c; margin-bottom: 12px; font-weight: 700; text-align: center; }
+  .info-box { background: #eef4ff; border-left: 4px solid #1a3a5c; padding: 11px 14px; border-radius: 0 7px 7px 0; margin-bottom: 16px; font-size: 0.82rem; line-height: 1.6; color: #444; }
+  .btn-calc {
+    width: 100%; padding: 13px; background: #1a3a5c; color: #fff;
+    border: none; border-radius: 8px; font-size: 1.05rem; font-weight: 700;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .btn-calc:hover { background: #2a5a8c; }
+
+  /* Results */
+  .result-wrap { overflow-x: auto; }
+  table.rtable { width: 100%; border-collapse: collapse; font-size: 0.85rem; min-width: 560px; }
+  table.rtable thead tr th { background: #1a3a5c; color: #fff; padding: 10px 12px; text-align: center; white-space: nowrap; }
+  table.rtable thead tr th:first-child { text-align: left; }
+  table.rtable tbody td { padding: 8px 12px; border-bottom: 1px solid #e8edf2; text-align: right; white-space: nowrap; }
+  table.rtable tbody td:first-child { text-align: left; color: #555; }
+  table.rtable tr.section-head td { background: #f0f4f8; font-weight: 700; color: #1a3a5c; font-size: 0.82rem; text-align: left !important; }
+  table.rtable tr.subtotal td { background: #f5f8fc; font-weight: 700; }
+  table.rtable tr.grand-total td { background: #dbeafe; font-weight: 700; font-size: 0.95rem; color: #1a3a5c; }
+  table.rtable tr.hand-take td { background: #dcfce7; font-weight: 700; color: #166534; }
+  .badge-best { display: inline-block; background: #166534; color: #fff; padding: 1px 7px; border-radius: 4px; font-size: 0.72rem; margin-left: 4px; }
+  .best-val { color: #166534 !important; font-weight: 700 !important; }
+  .note { font-size: 0.75rem; color: #888; margin-top: 14px; line-height: 1.7; }
+
+  /* Social insurance toggle */
+  .toggle-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+  .toggle-row label { font-size: 0.82rem; color: #555; font-weight: 600; }
+
+  @media (max-width: 640px) {
+    .input-grid { grid-template-columns: 1fr; }
+    .plan-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>役員報酬シミュレーション</h1>
+  <p>役員報酬の金額を変えた場合の法人・個人の税負担合計を比較します（プランA〜C）</p>
+</header>
+
+<div class="container">
+
+  <!-- 法人情報 -->
+  <div class="card">
+    <h2>法人情報</h2>
+    <div class="input-grid">
+      <div class="input-group">
+        <label>役員報酬支給前の法人利益（年間・円）</label>
+        <input type="number" id="houjinRieki" value="20000000" step="100000" min="0">
+      </div>
+      <div class="input-group">
+        <label>資本金区分</label>
+        <select id="shihonkin">
+          <option value="senman">1,000万円以下</option>
+          <option value="okuenka" selected>1億円以下（1,000万円超）</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>都道府県</label>
+        <select id="todofuken"></select>
+      </div>
+      <div class="input-group">
+        <label>社会保険（役員・健康保険＋厚生年金）</label>
+        <select id="socialIns">
+          <option value="yes" selected>加入する</option>
+          <option value="no">加入しない</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- 各プラン -->
+  <div class="card">
+    <h2>各プランの役員報酬（年間・役員1名）</h2>
+    <div class="info-box">
+      役員報酬は損金算入できるため、法人の課税所得を減らす一方で個人側の課税所得が増えます。<br>
+      プランA〜Cで金額を変えて、法人税等＋個人税等の合計コストが最も低いプランを確認できます。
+    </div>
+    <div class="plan-grid">
+      <div class="plan-col">
+        <h3>プラン A</h3>
+        <div class="input-group">
+          <label>役員報酬（年間・円）</label>
+          <input type="number" id="planA" value="0" step="100000" min="0">
+        </div>
+      </div>
+      <div class="plan-col">
+        <h3>プラン B</h3>
+        <div class="input-group">
+          <label>役員報酬（年間・円）</label>
+          <input type="number" id="planB" value="10000000" step="100000" min="0">
+        </div>
+      </div>
+      <div class="plan-col">
+        <h3>プラン C</h3>
+        <div class="input-group">
+          <label>役員報酬（年間・円）</label>
+          <input type="number" id="planC" value="20000000" step="100000" min="0">
+        </div>
+      </div>
+    </div>
+    <button class="btn-calc" onclick="calculate()">計算する</button>
+  </div>
+
+  <!-- 結果 -->
+  <div class="card" id="resultCard" style="display:none">
+    <h2>計算結果</h2>
+    <div class="result-wrap" id="resultContent"></div>
+    <p class="note" id="resultNote"></p>
+  </div>
+
+</div>
+
+<script>
+// ── 都道府県リスト ──────────────────────────────────────────
+const PREF_LIST = [
+  '北海道','青森県','岩手県','宮城県','秋田県','山形県','福島県',
+  '茨城県','栃木県','群馬県','埼玉県','千葉県','東京都','神奈川県',
+  '新潟県','富山県','石川県','福井県','山梨県','長野県','岐阜県',
+  '静岡県','愛知県','三重県','滋賀県','京都府','大阪府','兵庫県',
+  '奈良県','和歌山県','鳥取県','島根県','岡山県','広島県','山口県',
+  '徳島県','香川県','愛媛県','高知県','福岡県','佐賀県','長崎県',
+  '熊本県','大分県','宮崎県','鹿児島県','沖縄県',
+];
+
+// ── 法人税率データ ──────────────────────────────────────────
+const STD   = [0.035, 0.053, 0.070];
+const CHOKA = [0.0375, 0.05665, 0.0748];
+const PREF_DATA = {
+  '東京都': { jigyoSmall:STD,  jigyoLarge:CHOKA, juminRate:0.070, juminRateHigh:0.104, juminThreshold:10000000, kintou:[70000,180000] },
+  '大阪府': { jigyoSmall:STD,  jigyoLarge:CHOKA, juminRate:0.070, juminRateHigh:0.070, juminThreshold:0,        kintou:[70000,180000] },
+};
+const PREF_DEFAULT = { jigyoSmall:STD, jigyoLarge:STD, juminRate:0.070, juminRateHigh:0.070, juminThreshold:0, kintou:[70000,180000] };
+function getPrefData(pref) { return PREF_DATA[pref] || PREF_DEFAULT; }
+
+// ── 法人税等計算 ────────────────────────────────────────────
+function calcCorporateTax(profit, shihonkin, pref) {
+  if (profit <= 0) return { total:0, houjinzei:0, chihouHoujinzei:0, jigyozei:0, tokubetuJigyozei:0, juminzei:0 };
+  const pd = getPrefData(pref);
+
+  let houjinzei = 0;
+  if (profit <= 8000000) {
+    houjinzei = profit * 0.15;
+  } else {
+    houjinzei = 8000000 * 0.15 + (profit - 8000000) * 0.232;
+  }
+  const chihouHoujinzei = houjinzei * 0.103;
+
+  function shotokuwari(income, r) {
+    if (income <= 4000000) return income * r[0];
+    if (income <= 8000000) return 4000000 * r[0] + (income - 4000000) * r[1];
+    return 4000000 * r[0] + 4000000 * r[1] + (income - 8000000) * r[2];
+  }
+  const useRates   = (shihonkin === 'senman') ? pd.jigyoSmall : pd.jigyoLarge;
+  const jigyozei   = shotokuwari(profit, useRates);
+  const jigyostd   = shotokuwari(profit, STD);
+  const tokubetuJigyozei = jigyostd * 0.37;
+
+  const juminRate  = (pd.juminThreshold > 0 && houjinzei > pd.juminThreshold) ? pd.juminRateHigh : pd.juminRate;
+  const juminzeiHW = houjinzei * juminRate;
+  const kintou     = (shihonkin === 'senman') ? pd.kintou[0] : pd.kintou[1];
+  const juminzei   = juminzeiHW + kintou;
+
+  const total = houjinzei + chihouHoujinzei + jigyozei + tokubetuJigyozei + juminzei;
+  return { total, houjinzei, chihouHoujinzei, jigyozei, tokubetuJigyozei, juminzei };
+}
+
+// ── 給与所得控除（2024年） ─────────────────────────────────
+function kyuyoKojo(income) {
+  if (income <= 1625000) return 550000;
+  if (income <= 1800000) return Math.max(income * 0.4 - 100000, 550000);
+  if (income <= 3600000) return income * 0.3 + 80000;
+  if (income <= 6600000) return income * 0.2 + 440000;
+  if (income <= 8500000) return income * 0.1 + 1100000;
+  return 1950000;
+}
+
+// ── 社会保険料（本人負担）── 協会けんぽ 東京 2024年度 40歳以上
+// 健保+介護: 5.82%（min=40,500 max=970,776）、厚生年金: 9.15%（min=96,624 max=713,700）
+function calcSocialIns(annualSalary, ins) {
+  if (!ins) return 0;
+  const kenpo = Math.min(Math.max(annualSalary * 0.0582, 40500), 970776);
+  const nenkin = Math.min(Math.max(annualSalary * 0.0915, 96624), 713700);
+  return kenpo + nenkin;
+}
+
+// ── 所得税（超過累進 2024年） ───────────────────────────────
+function calcShotokuzei(taxable) {
+  if (taxable <= 0) return 0;
+  const tbl = [
+    [1950000,   0.05,       0],
+    [3300000,   0.10,   97500],
+    [6950000,   0.20,  427500],
+    [9000000,   0.23,  636000],
+    [18000000,  0.33, 1536000],
+    [40000000,  0.40, 2796000],
+    [Infinity,  0.45, 4796000],
+  ];
+  for (const [lim, rate, ded] of tbl) {
+    if (taxable <= lim) return Math.max(0, taxable * rate - ded);
+  }
+  return 0;
+}
+
+// ── 個人税等計算 ────────────────────────────────────────────
+function calcPersonalTax(yakuinHoshu, hasIns) {
+  if (yakuinHoshu <= 0) return { shotokuzei:0, fukko:0, juminzei:0, socialIns:0, total:0 };
+
+  const kyuyoShotoku = Math.max(0, yakuinHoshu - kyuyoKojo(yakuinHoshu));
+  const socialIns    = calcSocialIns(yakuinHoshu, hasIns);
+
+  // 所得税：基礎控除 480,000円、社会保険料控除
+  const kaseiShotoku  = Math.max(0, kyuyoShotoku - socialIns - 480000);
+  const shotokuzei    = calcShotokuzei(kaseiShotoku);
+  const fukko         = shotokuzei * 0.021; // 復興特別所得税
+
+  // 住民税：基礎控除 430,000円（住民税）、調整控除 2,500円、均等割 5,000円
+  const kaseiJumin = Math.max(0, kyuyoShotoku - socialIns - 430000);
+  const juminzei   = Math.max(0, kaseiJumin * 0.10 - 2500) + 5000;
+
+  const total = shotokuzei + fukko + juminzei + socialIns;
+  return { shotokuzei, fukko, juminzei, socialIns, total };
+}
+
+// ── メイン計算 ──────────────────────────────────────────────
+function calculate() {
+  const houjinRieki = parseFloat(document.getElementById('houjinRieki').value) || 0;
+  const shihonkin   = document.getElementById('shihonkin').value;
+  const pref        = document.getElementById('todofuken').value;
+  const hasIns      = document.getElementById('socialIns').value === 'yes';
+
+  const plans = [
+    { label:'A', val: parseFloat(document.getElementById('planA').value) || 0 },
+    { label:'B', val: parseFloat(document.getElementById('planB').value) || 0 },
+    { label:'C', val: parseFloat(document.getElementById('planC').value) || 0 },
+  ];
+
+  const results = plans.map(({ label, val }) => {
+    const hoshu = Math.min(val, houjinRieki); // 利益を超えない
+    // 法人側：雇用主社保も損金（近似：個人負担と同額）
+    const empIns      = calcSocialIns(hoshu, hasIns);
+    const houjinIncome = Math.max(0, houjinRieki - hoshu - empIns);
+    const corp         = calcCorporateTax(houjinIncome, shihonkin, pref);
+    const personal     = calcPersonalTax(hoshu, hasIns);
+    const grandTotal   = corp.total + empIns + personal.total;
+    return { label, hoshu, corp, personal, empIns, grandTotal };
+  });
+
+  const minTotal = Math.min(...results.map(r => r.grandTotal));
+  const fmt = n => Math.round(n).toLocaleString('ja-JP') + '円';
+
+  const th = results.map(r => {
+    const isBest = r.grandTotal === minTotal;
+    return `<th>${'プラン' + r.label}${isBest ? ' <span class="badge-best">最安</span>' : ''}</th>`;
+  }).join('');
+
+  const row = (label, fn, cls='') => `
+    <tr class="${cls}">
+      <td>${label}</td>
+      ${results.map(r => `<td class="${cls === 'grand-total' && r.grandTotal === minTotal ? 'best-val' : ''}">${fmt(fn(r))}</td>`).join('')}
+    </tr>`;
+
+  const html = `
+    <table class="rtable">
+      <thead><tr><th>項目</th>${th}</tr></thead>
+      <tbody>
+        <tr class="section-head"><td colspan="4">▼ 法人側</td></tr>
+        ${row('役員報酬（年間）', r => r.hoshu)}
+        ${row('雇用主 社会保険料（損金）', r => r.empIns)}
+        ${row('法人課税所得', r => Math.max(0, houjinRieki - r.hoshu - r.empIns))}
+        ${row('法人税', r => r.corp.houjinzei)}
+        ${row('地方法人税', r => r.corp.chihouHoujinzei)}
+        ${row('法人事業税', r => r.corp.jigyozei)}
+        ${row('特別法人事業税', r => r.corp.tokubetuJigyozei)}
+        ${row('法人住民税', r => r.corp.juminzei)}
+        ${row('法人税等 計', r => r.corp.total, 'subtotal')}
+
+        <tr class="section-head"><td colspan="4">▼ 個人側（役員1名・他の所得なし）</td></tr>
+        ${row('役員報酬（年間）', r => r.hoshu)}
+        ${row('個人 社会保険料（健保＋年金）', r => r.personal.socialIns)}
+        ${row('所得税', r => r.personal.shotokuzei)}
+        ${row('復興特別所得税', r => r.personal.fukko)}
+        ${row('住民税', r => r.personal.juminzei)}
+        ${row('個人税等・社保 計', r => r.personal.total, 'subtotal')}
+
+        ${row('合計コスト（法人税等＋雇用主社保＋個人税等・社保）', r => r.grandTotal, 'grand-total')}
+        ${row('手取り概算（法人利益 − 合計コスト）', r => houjinRieki - r.grandTotal, 'hand-take')}
+      </tbody>
+    </table>`;
+
+  document.getElementById('resultContent').innerHTML = html;
+  document.getElementById('resultNote').innerHTML =
+    '※ 所得税：2024年度 超過累進税率（5%〜45%）＋復興特別所得税2.1%。住民税：所得割10%＋均等割5,000円。<br>' +
+    '※ 社会保険料：協会けんぽ（東京）2024年度 40歳以上基準。健康保険＋介護保険 本人5.82%・雇用主5.82%、厚生年金 本人9.15%・雇用主9.15%。<br>' +
+    '※ 役員1名・他の所得なし・青色申告特別控除なしを前提とした概算です。<br>' +
+    '※ 実際の税額・社会保険料は税理士・社労士にご確認ください。';
+  document.getElementById('resultCard').style.display = 'block';
+  document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ── 初期化 ──────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  const sel = document.getElementById('todofuken');
+  PREF_LIST.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p; opt.textContent = p;
+    if (p === '東京都') opt.selected = true;
+    sel.appendChild(opt);
+  });
+  calculate();
+});
+</script>
+</body>
+</html>

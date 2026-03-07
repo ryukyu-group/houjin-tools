@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>税務・経営シミュレーション</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background: #f5f7fa; color: #333; }
+  header { background: #1a3a5c; color: #fff; padding: 24px; text-align: center; }
+  header h1 { font-size: 1.5rem; font-weight: 700; }
+  header p { font-size: 0.85rem; opacity: 0.8; margin-top: 6px; }
+  .container { max-width: 800px; margin: 40px auto; padding: 0 16px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+  .card {
+    background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+    padding: 24px; text-decoration: none; color: #333; transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+  .card .icon { font-size: 2rem; margin-bottom: 12px; }
+  .card h2 { font-size: 1.05rem; color: #1a3a5c; margin-bottom: 8px; }
+  .card p { font-size: 0.82rem; color: #666; line-height: 1.6; }
+  footer { text-align: center; color: #aaa; font-size: 0.75rem; margin-top: 48px; padding-bottom: 24px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>税務・経営シミュレーション</h1>
+  <p>法人の税務・経営判断をサポートする無料ツール集</p>
+</header>
+<div class="container">
+  <div class="grid">
+    <a class="card" href="houjin-zei-sim.html">
+      <div class="icon">🏢</div>
+      <h2>法人税シミュレーション</h2>
+      <p>法人税・地方法人税・事業税・住民税を都道府県別に計算。4プランの税負担を比較できます。</p>
+    </a>
+    <a class="card" href="yakuin-hoshu-sim.html">
+      <div class="icon">💼</div>
+      <h2>役員報酬シミュレーション</h2>
+      <p>役員報酬の金額別に法人税等と個人税等・社会保険料の合計コストを比較。最適な報酬額を検討できます。</p>
+    </a>
+  </div>
+</div>
+<footer>参考値です。実際の税額は税理士にご確認ください。</footer>
+</body>
+</html>
