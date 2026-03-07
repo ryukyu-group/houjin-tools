@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>決算予測シミュレーション</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background: #f5f7fa; color: #333; font-size: 14px; }
+  header { background: #1a3a5c; color: #fff; padding: 20px 24px; }
+  header h1 { font-size: 1.35rem; font-weight: 700; }
+  header p { font-size: 0.82rem; opacity: 0.8; margin-top: 5px; }
+  .container { max-width: 960px; margin: 24px auto; padding: 0 16px 40px; }
+  .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 24px; margin-bottom: 20px; }
+  .card h2 { font-size: 1rem; color: #1a3a5c; border-bottom: 2px solid #1a3a5c; padding-bottom: 8px; margin-bottom: 18px; font-weight: 700; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .input-group { display: flex; flex-direction: column; gap: 5px; }
+  .input-group label { font-size: 0.82rem; color: #555; font-weight: 600; }
+  .input-group input, .input-group select { padding: 9px 11px; border: 1.5px solid #d0d5dd; border-radius: 7px; font-size: 0.95rem; font-family: inherit; }
+  .input-group input:focus, .input-group select:focus { outline: none; border-color: #1a3a5c; }
+  .info-box { background: #eef4ff; border-left: 4px solid #1a3a5c; padding: 10px 13px; border-radius: 0 7px 7px 0; font-size: 0.8rem; line-height: 1.6; color: #444; margin: 10px 0; }
+  .btn-calc { width: 100%; padding: 12px; background: #1a3a5c; color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 14px; }
+  .btn-calc:hover { background: #2a5a8c; }
+  .subhead { font-size: 0.82rem; font-weight: 700; color: #1a3a5c; margin: 18px 0 8px; padding-bottom: 4px; border-bottom: 1px dashed #d0d5dd; }
+
+  .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+  .kpi { background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 9px; padding: 14px; text-align: center; }
+  .kpi.profit { border-color: #3b82f6; background: #eff6ff; }
+  .kpi.tax    { border-color: #f43f5e; background: #fff1f2; }
+  .kpi.hand   { border-color: #22c55e; background: #f0fdf4; }
+  .kpi.rate   { border-color: #8b5cf6; background: #f5f3ff; }
+  .kpi label  { font-size: 0.75rem; font-weight: 600; color: #555; display: block; margin-bottom: 4px; }
+  .kpi .val   { font-size: 1.1rem; font-weight: 700; }
+  .kpi.profit .val { color: #1d4ed8; }
+  .kpi.tax .val    { color: #be123c; }
+  .kpi.hand .val   { color: #15803d; }
+  .kpi.rate .val   { color: #6d28d9; }
+
+  table.dt { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  table.dt th { background: #1a3a5c; color: #fff; padding: 8px 12px; text-align: right; }
+  table.dt th:first-child { text-align: left; }
+  table.dt td { padding: 7px 12px; border-bottom: 1px solid #e2e8f0; text-align: right; }
+  table.dt td:first-child { text-align: left; color: #555; }
+  table.dt tr.section td { background: #f0f4f8; font-weight: 700; color: #1a3a5c; font-size: 0.8rem; text-align: left !important; }
+  table.dt tr.subtotal td { background: #f5f8fc; font-weight: 700; }
+  table.dt tr.total td { background: #dbeafe; font-weight: 700; color: #1a3a5c; }
+
+  /* 進捗バー */
+  .progress-wrap { margin: 16px 0; }
+  .progress-label { display: flex; justify-content: space-between; font-size: 0.78rem; color: #555; margin-bottom: 4px; }
+  .progress-bg { background: #e2e8f0; border-radius: 6px; height: 14px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 6px; transition: width 0.4s; }
+
+  .note { font-size: 0.75rem; color: #888; margin-top: 14px; line-height: 1.7; }
+  @media (max-width: 700px) { .grid2, .grid3, .kpi-row { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 480px) { .kpi-row { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>決算予測シミュレーション</h1>
+  <p>当期の実績と残り月数の予測から、期末の利益・税額を着地予測します</p>
+</header>
+<div class="container">
+
+  <div class="card">
+    <h2>基本情報</h2>
+    <div class="grid3">
+      <div class="input-group">
+        <label>事業年度（月数）</label>
+        <select id="nengetsu">
+          <option value="12" selected>12ヶ月（通常）</option>
+          <option value="6">6ヶ月</option>
+          <option value="3">3ヶ月</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>経過月数（実績ある月）</label>
+        <select id="keika">
+          <option value="1">1ヶ月経過</option>
+          <option value="2">2ヶ月経過</option>
+          <option value="3">3ヶ月経過</option>
+          <option value="4">4ヶ月経過</option>
+          <option value="5">5ヶ月経過</option>
+          <option value="6">6ヶ月経過</option>
+          <option value="7">7ヶ月経過</option>
+          <option value="8">8ヶ月経過</option>
+          <option value="9">9ヶ月経過</option>
+          <option value="10">10ヶ月経過</option>
+          <option value="11">11ヶ月経過</option>
+          <option value="12" selected>12ヶ月経過（決算）</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>資本金区分</label>
+        <select id="shihonkin">
+          <option value="senman">1,000万円以下</option>
+          <option value="okuenka" selected>1億円以下（1,000万円超）</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="subhead">実績（経過月の確定値）</div>
+    <div class="grid3">
+      <div class="input-group">
+        <label>売上高（実績・円）</label>
+        <input type="number" id="uriageJisseki" value="50000000" step="100000" min="0">
+      </div>
+      <div class="input-group">
+        <label>売上原価（実績・円）</label>
+        <input type="number" id="genkaJisseki" value="20000000" step="100000" min="0">
+      </div>
+      <div class="input-group">
+        <label>販管費（実績・円）</label>
+        <input type="number" id="hankanJisseki" value="15000000" step="100000" min="0">
+      </div>
+    </div>
+
+    <div class="subhead">残り月数の予測（月平均）</div>
+    <div class="grid3">
+      <div class="input-group">
+        <label>月平均 売上高（予測・円）</label>
+        <input type="number" id="uriageYosoku" value="5000000" step="100000" min="0">
+      </div>
+      <div class="input-group">
+        <label>月平均 売上原価（予測・円）</label>
+        <input type="number" id="genkaYosoku" value="2000000" step="100000" min="0">
+      </div>
+      <div class="input-group">
+        <label>月平均 販管費（予測・円）</label>
+        <input type="number" id="hankanYosoku" value="1500000" step="100000" min="0">
+      </div>
+    </div>
+
+    <div class="subhead">その他調整</div>
+    <div class="grid3">
+      <div class="input-group">
+        <label>繰越欠損金（円）</label>
+        <input type="number" id="kurikoshi" value="0" step="100000" min="0">
+      </div>
+      <div class="input-group">
+        <label>特別損益（＋益 / −損）（円）</label>
+        <input type="number" id="tokubetsu" value="0" step="100000">
+      </div>
+      <div class="input-group">
+        <label>都道府県</label>
+        <select id="todofuken"></select>
+      </div>
+    </div>
+    <div class="info-box">
+      残り月数は「事業年度（月数）− 経過月数」で自動計算されます。<br>
+      予測値を調整することで「もし経費を○円増やしたら？」などの節税シミュレーションにも活用できます。
+    </div>
+    <button class="btn-calc" onclick="calculate()">計算する</button>
+  </div>
+
+  <div class="card" id="resultCard" style="display:none">
+    <h2>決算着地予測</h2>
+    <div id="progressArea"></div>
+    <div class="kpi-row" id="kpiRow"></div>
+    <div style="overflow-x:auto"><table class="dt" id="detailTable"></table></div>
+    <p class="note">
+      ※ 法人税は中小法人（資本金1億円以下）の税率で計算。繰越欠損金は法人税の課税所得から控除。<br>
+      ※ 法人税等合計には地方法人税・事業税・特別法人事業税・住民税を含みます。<br>
+      ※ 実際の税額は税理士にご確認ください。
+    </p>
+  </div>
+
+</div>
+
+<script>
+const PREF_LIST = ['北海道','青森県','岩手県','宮城県','秋田県','山形県','福島県','茨城県','栃木県','群馬県','埼玉県','千葉県','東京都','神奈川県','新潟県','富山県','石川県','福井県','山梨県','長野県','岐阜県','静岡県','愛知県','三重県','滋賀県','京都府','大阪府','兵庫県','奈良県','和歌山県','鳥取県','島根県','岡山県','広島県','山口県','徳島県','香川県','愛媛県','高知県','福岡県','佐賀県','長崎県','熊本県','大分県','宮崎県','鹿児島県','沖縄県'];
+const STD = [0.035,0.053,0.070], CHOKA = [0.0375,0.05665,0.0748];
+const PREF_DATA = {
+  '東京都': {jigyoSmall:STD,jigyoLarge:CHOKA,juminRate:0.070,juminRateHigh:0.104,juminThreshold:10000000,kintou:[70000,180000]},
+  '大阪府': {jigyoSmall:STD,jigyoLarge:CHOKA,juminRate:0.070,juminRateHigh:0.070,juminThreshold:0,kintou:[70000,180000]},
+};
+const PREF_DEFAULT = {jigyoSmall:STD,jigyoLarge:STD,juminRate:0.070,juminRateHigh:0.070,juminThreshold:0,kintou:[70000,180000]};
+function getPD(p){return PREF_DATA[p]||PREF_DEFAULT;}
+
+function fmt(n){return Math.round(n).toLocaleString('ja-JP')+'円';}
+function fmtPct(n){return n.toFixed(1)+'%';}
+
+function calcCorpTax(profit, shihonkin, pref) {
+  if(profit<=0) return {total:0,houjinzei:0,chihouHoujinzei:0,jigyozei:0,tokubetuJigyozei:0,juminzei:0};
+  const pd=getPD(pref);
+  const hj=profit<=8000000?profit*0.15:8000000*0.15+(profit-8000000)*0.232;
+  const cj=hj*0.103;
+  function sw(x,r){if(x<=4000000)return x*r[0];if(x<=8000000)return 4000000*r[0]+(x-4000000)*r[1];return 4000000*r[0]+4000000*r[1]+(x-8000000)*r[2];}
+  const useR=(shihonkin==='senman')?pd.jigyoSmall:pd.jigyoLarge;
+  const jg=sw(profit,useR), jgstd=sw(profit,STD), tjg=jgstd*0.37;
+  const jr=(pd.juminThreshold>0&&hj>pd.juminThreshold)?pd.juminRateHigh:pd.juminRate;
+  const jm=hj*jr+((shihonkin==='senman')?pd.kintou[0]:pd.kintou[1]);
+  return {total:hj+cj+jg+tjg+jm,houjinzei:hj,chihouHoujinzei:cj,jigyozei:jg,tokubetuJigyozei:tjg,juminzei:jm};
+}
+
+function calculate() {
+  const nengetsu     = parseInt(document.getElementById('nengetsu').value)||12;
+  const keika        = parseInt(document.getElementById('keika').value)||12;
+  const shihonkin    = document.getElementById('shihonkin').value;
+  const pref         = document.getElementById('todofuken').value;
+  const uriJ         = parseFloat(document.getElementById('uriageJisseki').value)||0;
+  const genkaJ       = parseFloat(document.getElementById('genkaJisseki').value)||0;
+  const hankanJ      = parseFloat(document.getElementById('hankanJisseki').value)||0;
+  const uriY         = parseFloat(document.getElementById('uriageYosoku').value)||0;
+  const genkaY       = parseFloat(document.getElementById('genkaYosoku').value)||0;
+  const hankanY      = parseFloat(document.getElementById('hankanYosoku').value)||0;
+  const kurikoshi    = parseFloat(document.getElementById('kurikoshi').value)||0;
+  const tokubetsu    = parseFloat(document.getElementById('tokubetsu').value)||0;
+
+  const nokori = nengetsu - keika;
+
+  // 予測値
+  const uriageYosokuTotal  = uriY * nokori;
+  const genkaYosokuTotal   = genkaY * nokori;
+  const hankanYosokuTotal  = hankanY * nokori;
+
+  const uriageTotal  = uriJ + uriageYosokuTotal;
+  const genkaTotal   = genkaJ + genkaYosokuTotal;
+  const hankanTotal  = hankanJ + hankanYosokuTotal;
+  const araRieki     = uriageTotal - genkaTotal;
+  const eigyoRieki   = araRieki - hankanTotal;
+  const zeizenRieki  = eigyoRieki + tokubetsu;
+
+  const taxableIncome = Math.max(0, zeizenRieki - kurikoshi);
+  const corp = calcCorpTax(taxableIncome, shihonkin, pref);
+
+  const afterTax = zeizenRieki - corp.total;
+  const effectiveRate = zeizenRieki > 0 ? corp.total / zeizenRieki * 100 : 0;
+  const eigyoRieiRate = uriageTotal > 0 ? eigyoRieki / uriageTotal * 100 : 0;
+
+  // 進捗バー
+  const progressPct = Math.min(100, keika / nengetsu * 100);
+  const uriPct = uriJ > 0 ? Math.min(100, uriJ / uriageTotal * 100) : 0;
+  document.getElementById('progressArea').innerHTML = `
+    <div class="progress-wrap">
+      <div class="progress-label"><span>期間進捗（${keika}/${nengetsu}ヶ月）</span><span>${progressPct.toFixed(0)}%</span></div>
+      <div class="progress-bg"><div class="progress-fill" style="width:${progressPct}%;background:#1a3a5c"></div></div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-label"><span>売上進捗（実績 ${fmt(uriJ)} / 予測期末 ${fmt(uriageTotal)}）</span><span>${uriPct.toFixed(0)}%</span></div>
+      <div class="progress-bg"><div class="progress-fill" style="width:${uriPct}%;background:#3b82f6"></div></div>
+    </div>`;
+
+  document.getElementById('kpiRow').innerHTML = `
+    <div class="kpi profit"><label>税引前当期純利益（予測）</label><div class="val">${fmt(zeizenRieki)}</div></div>
+    <div class="kpi tax"><label>法人税等 合計（予測）</label><div class="val">${fmt(corp.total)}</div></div>
+    <div class="kpi hand"><label>税引後利益（予測）</label><div class="val">${fmt(afterTax)}</div></div>
+    <div class="kpi rate"><label>実効税率 / 営業利益率</label><div class="val">${fmtPct(effectiveRate)} / ${fmtPct(eigyoRieiRate)}</div></div>`;
+
+  document.getElementById('detailTable').innerHTML = `
+    <thead><tr><th>項目</th><th>実績（${keika}ヶ月）</th><th>予測（残り${nokori}ヶ月）</th><th>期末着地（合計）</th></tr></thead>
+    <tbody>
+      <tr class="section"><td colspan="4">▼ 損益計算書</td></tr>
+      <tr><td>売上高</td><td>${fmt(uriJ)}</td><td>${fmt(uriageYosokuTotal)}</td><td>${fmt(uriageTotal)}</td></tr>
+      <tr><td>売上原価</td><td>${fmt(genkaJ)}</td><td>${fmt(genkaYosokuTotal)}</td><td>${fmt(genkaTotal)}</td></tr>
+      <tr class="subtotal"><td>売上総利益（粗利）</td><td>${fmt(uriJ-genkaJ)}</td><td>${fmt(uriageYosokuTotal-genkaYosokuTotal)}</td><td>${fmt(araRieki)}</td></tr>
+      <tr><td>販売費及び一般管理費</td><td>${fmt(hankanJ)}</td><td>${fmt(hankanYosokuTotal)}</td><td>${fmt(hankanTotal)}</td></tr>
+      <tr class="subtotal"><td>営業利益</td><td>${fmt(uriJ-genkaJ-hankanJ)}</td><td>${fmt(uriageYosokuTotal-genkaYosokuTotal-hankanYosokuTotal)}</td><td>${fmt(eigyoRieki)}</td></tr>
+      <tr><td>特別損益</td><td>—</td><td>—</td><td>${fmt(tokubetsu)}</td></tr>
+      <tr class="subtotal"><td>税引前当期純利益</td><td>—</td><td>—</td><td>${fmt(zeizenRieki)}</td></tr>
+      <tr class="section"><td colspan="4">▼ 法人税等</td></tr>
+      <tr><td>繰越欠損金控除</td><td>—</td><td>—</td><td>▲${fmt(kurikoshi)}</td></tr>
+      <tr><td>課税所得</td><td>—</td><td>—</td><td>${fmt(taxableIncome)}</td></tr>
+      <tr><td>法人税</td><td>—</td><td>—</td><td>${fmt(corp.houjinzei)}</td></tr>
+      <tr><td>地方法人税</td><td>—</td><td>—</td><td>${fmt(corp.chihouHoujinzei)}</td></tr>
+      <tr><td>法人事業税</td><td>—</td><td>—</td><td>${fmt(corp.jigyozei)}</td></tr>
+      <tr><td>特別法人事業税</td><td>—</td><td>—</td><td>${fmt(corp.tokubetuJigyozei)}</td></tr>
+      <tr><td>法人住民税</td><td>—</td><td>—</td><td>${fmt(corp.juminzei)}</td></tr>
+      <tr class="total"><td>法人税等 合計</td><td>—</td><td>—</td><td>${fmt(corp.total)}</td></tr>
+      <tr class="total"><td>税引後当期純利益</td><td>—</td><td>—</td><td>${fmt(afterTax)}</td></tr>
+    </tbody>`;
+
+  document.getElementById('resultCard').style.display='block';
+  document.getElementById('resultCard').scrollIntoView({behavior:'smooth'});
+}
+
+window.addEventListener('DOMContentLoaded',()=>{
+  const sel=document.getElementById('todofuken');
+  PREF_LIST.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=p;if(p==='東京都')o.selected=true;sel.appendChild(o);});
+  calculate();
+});
+</script>
+</body>
+</html>

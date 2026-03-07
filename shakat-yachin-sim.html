@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>役員社宅家賃シミュレーション</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background: #f5f7fa; color: #333; font-size: 14px; }
+  header { background: #1a3a5c; color: #fff; padding: 20px 24px; }
+  header h1 { font-size: 1.35rem; font-weight: 700; }
+  header p { font-size: 0.82rem; opacity: 0.8; margin-top: 5px; }
+  .container { max-width: 880px; margin: 24px auto; padding: 0 16px 40px; }
+  .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 24px; margin-bottom: 20px; }
+  .card h2 { font-size: 1rem; color: #1a3a5c; border-bottom: 2px solid #1a3a5c; padding-bottom: 8px; margin-bottom: 18px; font-weight: 700; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .input-group { display: flex; flex-direction: column; gap: 5px; }
+  .input-group label { font-size: 0.82rem; color: #555; font-weight: 600; }
+  .input-group input, .input-group select { padding: 9px 11px; border: 1.5px solid #d0d5dd; border-radius: 7px; font-size: 0.95rem; font-family: inherit; }
+  .input-group input:focus, .input-group select:focus { outline: none; border-color: #1a3a5c; }
+  .info-box { background: #eef4ff; border-left: 4px solid #1a3a5c; padding: 10px 13px; border-radius: 0 7px 7px 0; font-size: 0.8rem; line-height: 1.6; color: #444; margin: 12px 0; }
+  .warn-box { background: #fffbeb; border-left: 4px solid #d97706; padding: 10px 13px; border-radius: 0 7px 7px 0; font-size: 0.8rem; line-height: 1.6; color: #444; margin: 12px 0; }
+  .btn-calc { width: 100%; padding: 12px; background: #1a3a5c; color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 14px; }
+  .btn-calc:hover { background: #2a5a8c; }
+
+  .result-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+  .res-box { border-radius: 9px; padding: 16px; text-align: center; }
+  .res-box.blue   { background: #eff6ff; border: 1.5px solid #3b82f6; }
+  .res-box.green  { background: #f0fdf4; border: 1.5px solid #22c55e; }
+  .res-box.orange { background: #fff7ed; border: 1.5px solid #f97316; }
+  .res-box label  { font-size: 0.75rem; font-weight: 600; color: #555; display: block; margin-bottom: 4px; }
+  .res-box .val   { font-size: 1.1rem; font-weight: 700; }
+  .res-box.blue .val   { color: #1d4ed8; }
+  .res-box.green .val  { color: #15803d; }
+  .res-box.orange .val { color: #c2410c; }
+
+  table.dt { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  table.dt th { background: #1a3a5c; color: #fff; padding: 8px 12px; text-align: left; }
+  table.dt th:last-child { text-align: right; }
+  table.dt td { padding: 7px 12px; border-bottom: 1px solid #e2e8f0; }
+  table.dt td:last-child { text-align: right; }
+  table.dt tr.total td { background: #eff6ff; font-weight: 700; color: #1d4ed8; }
+  table.dt tr.result td { background: #dcfce7; font-weight: 700; color: #14532d; }
+
+  .note { font-size: 0.75rem; color: #888; margin-top: 14px; line-height: 1.7; }
+  @media (max-width: 600px) { .grid2, .grid3, .result-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>役員社宅家賃シミュレーション</h1>
+  <p>役員が会社から住宅を借りる場合の法定家賃（最低家賃）を計算します</p>
+</header>
+<div class="container">
+
+  <div class="info-box" style="border-radius:12px;border-left:none;border:1.5px solid #3b82f6;padding:16px;margin-bottom:0">
+    <strong>社宅のしくみ：</strong>会社が住宅を借りて役員に転貸（またはオーナーに直接貸付）する場合、<br>
+    役員が<strong>法定家賃（最低家賃）以上</strong>を会社に支払えば、差額が給与として課税されません。<br>
+    会社が支払う家賃（市場賃料）との差額は会社の損金となり、節税効果があります。
+  </div>
+
+  <div class="card" style="margin-top:20px">
+    <h2>物件情報</h2>
+    <div class="grid2">
+      <div class="input-group">
+        <label>住宅の種類</label>
+        <select id="shurui" onchange="onShuruiChange()">
+          <option value="shoukibo">小規模住宅（木造132㎡以下 / 非木造99㎡以下）</option>
+          <option value="ookibo">小規模超（豪華でない）＊賃貸の場合</option>
+          <option value="karitai">会社が賃借している場合（家賃の50%）</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>構造</label>
+        <select id="kouzou">
+          <option value="mokuzou">木造</option>
+          <option value="himokuzou" selected>非木造（鉄筋・RC等）</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 小規模住宅用 -->
+    <div id="shoukiboArea">
+      <div class="grid3" style="margin-top:14px">
+        <div class="input-group">
+          <label>建物の固定資産税課税標準額（円）</label>
+          <input type="number" id="tatemono" value="5000000" step="100000" min="0">
+        </div>
+        <div class="input-group">
+          <label>土地の固定資産税課税標準額（円）</label>
+          <input type="number" id="tochi" value="10000000" step="100000" min="0">
+        </div>
+        <div class="input-group">
+          <label>床面積（㎡）</label>
+          <input type="number" id="menseki" value="70" step="1" min="1">
+        </div>
+      </div>
+      <div class="info-box">
+        固定資産税課税標準額は毎年4〜6月頃に届く「固定資産税・都市計画税納税通知書」に記載されています。<br>
+        不明な場合は市区町村の役所で「固定資産評価証明書」を取得できます。
+      </div>
+    </div>
+
+    <!-- 賃貸の場合（家賃50%） -->
+    <div id="karitaiArea" style="display:none">
+      <div class="grid2" style="margin-top:14px">
+        <div class="input-group">
+          <label>会社が支払う家賃（月額・円）</label>
+          <input type="number" id="karitaiYachin" value="200000" step="10000" min="0">
+        </div>
+      </div>
+      <div class="warn-box">
+        小規模住宅超（豪華でない）で会社が賃借している場合：法定家賃 ＝ 会社支払家賃 × 50%<br>
+        ※ 豪華社宅（床面積240㎡超等）は時価（市場賃料相当額）が法定家賃となります。
+      </div>
+    </div>
+
+    <div class="grid2" style="margin-top:14px">
+      <div class="input-group">
+        <label>市場賃料（相場・月額・円）</label>
+        <input type="number" id="shijoPeach" value="200000" step="10000" min="0">
+      </div>
+      <div class="input-group">
+        <label>役員報酬（月額・円）</label>
+        <input type="number" id="yakuinHoshu" value="500000" step="10000" min="0">
+      </div>
+    </div>
+    <button class="btn-calc" onclick="calculate()">計算する</button>
+  </div>
+
+  <div class="card" id="resultCard" style="display:none">
+    <h2>計算結果</h2>
+    <div class="result-grid" id="resultGrid"></div>
+    <table class="dt" id="detailTable"></table>
+    <p class="note" id="resultNote"></p>
+  </div>
+
+  <!-- 参考表 -->
+  <div class="card">
+    <h2>参考：小規模住宅の法定家賃計算式</h2>
+    <table class="dt">
+      <tr><th>計算要素</th><th>算式</th></tr>
+      <tr><td>A：建物の固定資産税相当額</td><td>建物の固定資産税課税標準額 × 0.2%</td></tr>
+      <tr><td>B：床面積割</td><td>12円 × 床面積(㎡) ÷ 3.3（㎡換算）</td></tr>
+      <tr><td>C：土地の固定資産税相当額</td><td>土地の固定資産税課税標準額 × 0.22%</td></tr>
+      <tr><td style="font-weight:700">年間法定家賃</td><td style="font-weight:700">A + B + C</td></tr>
+      <tr><td>月額法定家賃</td><td>年間法定家賃 ÷ 12</td></tr>
+    </table>
+  </div>
+
+</div>
+
+<script>
+function fmt(n){return Math.round(n).toLocaleString('ja-JP')+'円';}
+function fmtPct(n){return n.toFixed(1)+'%';}
+
+function onShuruiChange() {
+  const v = document.getElementById('shurui').value;
+  document.getElementById('shoukiboArea').style.display = v === 'shoukibo' ? 'block' : 'none';
+  document.getElementById('karitaiArea').style.display  = v !== 'shoukibo' ? 'block' : 'none';
+}
+
+function calculate() {
+  const shurui      = document.getElementById('shurui').value;
+  const shijoYachin = parseFloat(document.getElementById('shijoPeach').value) || 0;
+  const yakuinHoshu = parseFloat(document.getElementById('yakuinHoshu').value) || 0;
+
+  let hoteiYachinTsuki = 0;
+  let calcDetail = '';
+
+  if (shurui === 'shoukibo') {
+    const tatemono = parseFloat(document.getElementById('tatemono').value) || 0;
+    const tochi    = parseFloat(document.getElementById('tochi').value)    || 0;
+    const menseki  = parseFloat(document.getElementById('menseki').value)  || 0;
+    const A = tatemono * 0.002;       // 0.2%
+    const B = 12 * (menseki / 3.3);  // 12円×坪数
+    const C = tochi * 0.0022;        // 0.22%
+    const nen = A + B + C;
+    hoteiYachinTsuki = nen / 12;
+    calcDetail = `
+      <tr><td>A：建物 固定資産税課税標準額 × 0.2%</td><td>${fmt(A)}/年</td></tr>
+      <tr><td>B：12円 × ${menseki.toFixed(1)}㎡ ÷ 3.3</td><td>${fmt(B)}/年</td></tr>
+      <tr><td>C：土地 固定資産税課税標準額 × 0.22%</td><td>${fmt(C)}/年</td></tr>
+      <tr class="total"><td>年間法定家賃（A+B+C）</td><td>${fmt(nen)}/年</td></tr>`;
+  } else {
+    const karitaiYachin = parseFloat(document.getElementById('karitaiYachin').value) || 0;
+    hoteiYachinTsuki = karitaiYachin * 0.5;
+    calcDetail = `
+      <tr><td>会社支払家賃（月額）</td><td>${fmt(karitaiYachin)}/月</td></tr>
+      <tr><td>法定家賃 = 会社家賃 × 50%</td><td>${fmt(hoteiYachinTsuki)}/月</td></tr>`;
+  }
+
+  const hoteiYachinNen = hoteiYachinTsuki * 12;
+  const setsuyaku  = shijoYachin - hoteiYachinTsuki; // 月額節税
+  const kaihaError = hoteiYachinTsuki > shijoYachin;
+
+  document.getElementById('resultGrid').innerHTML = `
+    <div class="res-box blue">
+      <label>法定家賃（最低負担額）</label>
+      <div class="val">${fmt(hoteiYachinTsuki)}/月</div>
+      <div style="font-size:0.75rem;color:#888;margin-top:4px">年額 ${fmt(hoteiYachinNen)}</div>
+    </div>
+    <div class="res-box green">
+      <label>会社負担分（経費）</label>
+      <div class="val">${fmt(Math.max(0, shijoYachin - hoteiYachinTsuki))}/月</div>
+      <div style="font-size:0.75rem;color:#888;margin-top:4px">年額 ${fmt(Math.max(0, setsuyaku)*12)}</div>
+    </div>
+    <div class="res-box orange">
+      <label>市場賃料に対する自己負担率</label>
+      <div class="val">${shijoYachin>0?fmtPct(hoteiYachinTsuki/shijoYachin*100):'—'}</div>
+      <div style="font-size:0.75rem;color:#888;margin-top:4px">（低いほど節税効果大）</div>
+    </div>`;
+
+  document.getElementById('detailTable').innerHTML = `
+    <thead><tr><th>項目</th><th>月額</th></tr></thead>
+    <tbody>
+      ${calcDetail}
+      <tr><td><strong>月額 法定家賃（役員が支払う最低額）</strong></td><td><strong>${fmt(hoteiYachinTsuki)}</strong></td></tr>
+      <tr><td>市場賃料（相場）</td><td>${fmt(shijoYachin)}</td></tr>
+      <tr><td>会社負担分（損金算入・節税効果あり）</td><td>${fmt(Math.max(0, shijoYachin - hoteiYachinTsuki))}</td></tr>
+      <tr class="result"><td>役員の実質的な住居費削減額</td><td>${fmt(Math.max(0, setsuyaku))}/月（年${fmt(Math.max(0,setsuyaku)*12)}）</td></tr>
+    </tbody>`;
+
+  document.getElementById('resultNote').innerHTML =
+    '※ 小規模住宅の法定家賃は所得税基本通達36-41に基づきます。固定資産税課税標準額が不明な場合は市区町村に確認してください。<br>' +
+    '※ 役員が法定家賃以上を支払えば、差額部分は給与課税されません。法定家賃未満の場合は差額が給与として課税されます。<br>' +
+    '※ 豪華社宅（床面積240㎡超、または著しく高額な内外装）は別途時価計算が必要です。<br>' +
+    '※ 実際の計算・適用可否は税理士にご確認ください。';
+
+  document.getElementById('resultCard').style.display = 'block';
+  document.getElementById('resultCard').scrollIntoView({behavior:'smooth'});
+}
+window.addEventListener('DOMContentLoaded', calculate);
+</script>
+</body>
+</html>

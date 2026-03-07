@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>マイクロ法人シミュレーション</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background: #f5f7fa; color: #333; font-size: 14px; }
+  header { background: #1a3a5c; color: #fff; padding: 20px 24px; }
+  header h1 { font-size: 1.35rem; font-weight: 700; }
+  header p { font-size: 0.82rem; opacity: 0.8; margin-top: 5px; }
+  .container { max-width: 960px; margin: 24px auto; padding: 0 16px 40px; }
+  .card { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 24px; margin-bottom: 20px; }
+  .card h2 { font-size: 1rem; color: #1a3a5c; border-bottom: 2px solid #1a3a5c; padding-bottom: 8px; margin-bottom: 18px; font-weight: 700; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .input-group { display: flex; flex-direction: column; gap: 5px; }
+  .input-group label { font-size: 0.82rem; color: #555; font-weight: 600; }
+  .input-group input, .input-group select { padding: 9px 11px; border: 1.5px solid #d0d5dd; border-radius: 7px; font-size: 0.95rem; font-family: inherit; }
+  .input-group input:focus, .input-group select:focus { outline: none; border-color: #1a3a5c; }
+  .info-box { background: #eef4ff; border-left: 4px solid #1a3a5c; padding: 10px 13px; border-radius: 0 7px 7px 0; font-size: 0.8rem; line-height: 1.6; color: #444; margin: 12px 0; }
+  .warn-box { background: #fffbeb; border-left: 4px solid #d97706; padding: 10px 13px; border-radius: 0 7px 7px 0; font-size: 0.8rem; line-height: 1.6; color: #444; margin: 12px 0; }
+  .btn-calc { width: 100%; padding: 12px; background: #1a3a5c; color: #fff; border: none; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; margin-top: 14px; }
+  .btn-calc:hover { background: #2a5a8c; }
+  .subhead { font-size: 0.82rem; font-weight: 700; color: #1a3a5c; margin: 16px 0 8px; padding-bottom: 4px; border-bottom: 1px dashed #d0d5dd; }
+
+  .cmp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .cmp-box { border-radius: 10px; padding: 20px; }
+  .cmp-box.before { background: #fff7ed; border: 2px solid #f97316; }
+  .cmp-box.after  { background: #f0fdf4; border: 2px solid #22c55e; }
+  .cmp-box.winner { border-width: 3px; }
+  .cmp-box h3 { font-size: 0.9rem; font-weight: 700; margin-bottom: 10px; }
+  .cmp-box h3.before { color: #c2410c; }
+  .cmp-box h3.after  { color: #15803d; }
+  .cmp-amount { font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; }
+  .cmp-amount.before { color: #c2410c; }
+  .cmp-amount.after  { color: #15803d; }
+  .cmp-detail { font-size: 0.78rem; color: #555; line-height: 1.8; }
+  .save-box { background: #dcfce7; border: 2px solid #16a34a; border-radius: 10px; padding: 18px; text-align: center; margin-bottom: 16px; }
+  .save-box p { font-size: 0.9rem; color: #14532d; }
+  .save-box .save-amount { font-size: 1.8rem; font-weight: 700; color: #15803d; }
+
+  table.dt { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  table.dt th { background: #1a3a5c; color: #fff; padding: 8px 12px; text-align: center; }
+  table.dt th:first-child { text-align: left; }
+  table.dt td { padding: 7px 12px; border-bottom: 1px solid #e2e8f0; text-align: right; }
+  table.dt td:first-child { text-align: left; color: #555; }
+  table.dt tr.section td { background: #f0f4f8; font-weight: 700; color: #1a3a5c; font-size: 0.8rem; text-align: left !important; }
+  table.dt tr.subtotal td { background: #f5f8fc; font-weight: 700; }
+  table.dt tr.total td { background: #dcfce7; font-weight: 700; color: #14532d; }
+
+  .note { font-size: 0.75rem; color: #888; margin-top: 14px; line-height: 1.7; }
+  @media (max-width: 600px) { .grid2, .grid3, .cmp-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>マイクロ法人シミュレーション</h1>
+  <p>個人事業（メイン）＋マイクロ法人（社会保険対策）の節税・社保節約効果を試算します</p>
+</header>
+<div class="container">
+
+  <div class="info-box" style="margin-bottom:0;border-radius:12px;border-left:none;border:1.5px solid #3b82f6;padding:16px">
+    <strong>マイクロ法人とは：</strong>個人事業主が別途小規模な法人を設立し、そちらで最低限の役員報酬を受けることで、<br>
+    高額な国民健康保険料を社会保険（健保＋厚生年金）に切り替え、社保負担を大幅に削減する手法です。<br>
+    個人事業はそのまま継続し、法人では別の事業（例：コンサル・不動産）を行います。
+  </div>
+
+  <div class="card" style="margin-top:20px">
+    <h2>現状（個人事業主のみ）</h2>
+    <div class="grid2">
+      <div class="input-group">
+        <label>個人事業 年間所得（円）</label>
+        <input type="number" id="kojinShotoku" value="10000000" step="100000" min="0">
+      </div>
+      <div class="input-group">
+        <label>青色申告特別控除</label>
+        <select id="aokiro">
+          <option value="650000" selected>65万円</option>
+          <option value="550000">55万円</option>
+          <option value="100000">10万円</option>
+          <option value="0">白色</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>マイクロ法人の設定</h2>
+    <div class="grid3">
+      <div class="input-group">
+        <label>マイクロ法人の役員報酬（月額・円）</label>
+        <input type="number" id="microHoshu" value="100000" step="10000" min="0">
+      </div>
+      <div class="input-group">
+        <label>マイクロ法人の経費（年間・円）</label>
+        <input type="number" id="microKeihi" value="500000" step="100000" min="0">
+      </div>
+      <div class="input-group">
+        <label>マイクロ法人の売上（年間・円）</label>
+        <input type="number" id="microUriage" value="2000000" step="100000" min="0">
+      </div>
+    </div>
+    <div class="warn-box">
+      役員報酬は<strong>月額10万円前後</strong>が一般的（年収120万円程度）。<br>
+      社会保険の最低標準報酬月額：健保58,000円・年金88,000円。月10万なら標準報酬月額10万円の等級。<br>
+      <strong>注意：</strong>マイクロ法人は実態のある別事業が必要です。節税目的のみでの法人設立は税務否認リスクあり。
+    </div>
+    <button class="btn-calc" onclick="calculate()">計算する</button>
+  </div>
+
+  <div class="card" id="resultCard" style="display:none">
+    <h2>比較結果</h2>
+    <div class="save-box" id="saveBox"></div>
+    <div class="cmp-grid" id="cmpGrid"></div>
+    <h3 style="font-size:0.9rem;color:#1a3a5c;margin-bottom:10px;font-weight:700">詳細内訳</h3>
+    <div style="overflow-x:auto"><table class="dt" id="detailTable"></table></div>
+    <p class="note">
+      ※ 国民健康保険料は東京都2024年度基準（医療分8.89%＋支援金2.90%＋介護2.51%）の概算。<br>
+      ※ 社会保険（マイクロ法人）：協会けんぽ東京 2024年度。本人＋雇用主 健保11.58%・年金18.3%（40歳以上）。<br>
+      ※ マイクロ法人は法人税・住民税均等割（7万円）も発生します。<br>
+      ※ 実際の節税効果は税理士・社労士にご確認ください。
+    </p>
+  </div>
+
+</div>
+
+<script>
+function fmt(n){return Math.round(n).toLocaleString('ja-JP')+'円';}
+
+function kyuyoKojo(income) {
+  if(income<=1625000)return 550000;
+  if(income<=1800000)return Math.max(income*0.4-100000,550000);
+  if(income<=3600000)return income*0.3+80000;
+  if(income<=6600000)return income*0.2+440000;
+  if(income<=8500000)return income*0.1+1100000;
+  return 1950000;
+}
+function calcShotokuzei(taxable) {
+  if(taxable<=0)return 0;
+  const tbl=[[1950000,0.05,0],[3300000,0.10,97500],[6950000,0.20,427500],[9000000,0.23,636000],[18000000,0.33,1536000],[40000000,0.40,2796000],[Infinity,0.45,4796000]];
+  for(const [l,r,d] of tbl) if(taxable<=l) return Math.max(0,taxable*r-d);
+  return 0;
+}
+function calcKokuho(shotoku) {
+  const k=Math.max(0,shotoku-430000);
+  return Math.min(k*0.0889+48780,890000)+Math.min(k*0.0290+15600,330000)+Math.min(k*0.0251+18600,220000);
+}
+// 社会保険（本人+雇用主）
+function calcShakai(monthSalary) {
+  const annualSalary = monthSalary * 12;
+  const kenpoRateFull = 0.1158; // 健保+介護（40歳以上、本人+雇用主合計）
+  const nenkinRateFull = 0.183;
+  const kenpoMin = 58000 * kenpoRateFull, kenpoMax = 1390000 * kenpoRateFull;
+  const nenkinMin = 88000 * nenkinRateFull, nenkinMax = 650000 * nenkinRateFull * 12;
+  const kenpoTotal = Math.min(Math.max(annualSalary * kenpoRateFull, kenpoMin * 12), kenpoMax * 12);
+  const nenkinTotal = Math.min(Math.max(annualSalary * nenkinRateFull, nenkinMin * 12), nenkinMax);
+  return {
+    total: kenpoTotal + nenkinTotal,
+    kojin: (kenpoTotal + nenkinTotal) / 2, // 本人負担
+    hojin: (kenpoTotal + nenkinTotal) / 2, // 雇用主負担
+  };
+}
+// 法人税（超簡易）
+function calcMicroCorpTax(profit) {
+  if(profit<=0) return 70000; // 均等割のみ
+  const hj = profit<=8000000?profit*0.15:8000000*0.15+(profit-8000000)*0.232;
+  const cj = hj*0.103;
+  const jg = profit<=4000000?profit*0.035:profit<=8000000?4000000*0.035+(profit-4000000)*0.053:4000000*0.035+4000000*0.053+(profit-8000000)*0.07;
+  const tjg = jg*0.37;
+  const jm = hj*0.07+70000; // 均等割1,000万以下
+  return hj+cj+jg+tjg+jm;
+}
+
+function calculate() {
+  const kojinShotoku = parseFloat(document.getElementById('kojinShotoku').value)||0;
+  const aokiro       = parseFloat(document.getElementById('aokiro').value)||650000;
+  const microMonthly = parseFloat(document.getElementById('microHoshu').value)||0;
+  const microKeihi   = parseFloat(document.getElementById('microKeihi').value)||0;
+  const microUriage  = parseFloat(document.getElementById('microUriage').value)||0;
+
+  // ── 現状：個人事業のみ ─────────────────────────────────
+  const jigyoShotoku = Math.max(0, kojinShotoku - aokiro);
+  const kokuho_now   = calcKokuho(jigyoShotoku);
+  const nenkin_now   = 16980 * 12; // 国民年金
+  const jigyozei_now = Math.max(0, (kojinShotoku - 2900000) * 0.05);
+  const kasei_now    = Math.max(0, jigyoShotoku - kokuho_now - nenkin_now - 480000);
+  const stax_now     = calcShotokuzei(kasei_now) * 1.021;
+  const kaseiJ_now   = Math.max(0, jigyoShotoku - kokuho_now - nenkin_now - 430000);
+  const juminzei_now = Math.max(0, kaseiJ_now*0.10-2500)+5000;
+  const total_now    = stax_now + juminzei_now + jigyozei_now + kokuho_now + nenkin_now;
+
+  // ── マイクロ法人後 ────────────────────────────────────
+  const microAnnual     = microMonthly * 12;
+  const shakai          = calcShakai(microMonthly);
+  const microProfit     = Math.max(0, microUriage - microAnnual - microKeihi - shakai.hojin);
+  const microCorpTax    = calcMicroCorpTax(microProfit);
+
+  // 個人事業所得（マイクロ法人役員報酬分は個人事業から出ないので変わらない）
+  const jigyoShotoku2   = Math.max(0, kojinShotoku - aokiro);
+  // 社保切替で国保→社保（マイクロ法人の社保に加入、国保脱退）
+  const shaho_kojin     = shakai.kojin; // 社保本人負担（健保+年金）
+  const jigyozei2       = Math.max(0, (kojinShotoku - 2900000) * 0.05);
+  // 個人の給与所得（役員報酬分）
+  const kyuyoShotoku    = Math.max(0, microAnnual - kyuyoKojo(microAnnual));
+  // 個人の合計所得 = 事業所得 + 給与所得
+  const totalShotoku    = jigyoShotoku2 + kyuyoShotoku;
+  const kasei2          = Math.max(0, totalShotoku - shaho_kojin - 480000);
+  const stax2           = calcShotokuzei(kasei2) * 1.021;
+  const kaseiJ2         = Math.max(0, totalShotoku - shaho_kojin - 430000);
+  const juminzei2       = Math.max(0, kaseiJ2*0.10-2500)+5000;
+  const total_after     = stax2 + juminzei2 + jigyozei2 + shaho_kojin + microCorpTax + shakai.hojin;
+
+  const save = total_now - total_after;
+
+  // 表示
+  document.getElementById('saveBox').innerHTML = `
+    <p>マイクロ法人設立により</p>
+    <div class="save-amount">${fmt(Math.abs(save))}</div>
+    <p>${save>0?'の節税・社保削減効果が見込まれます':'増加します（設定を見直してください）'}</p>`;
+
+  document.getElementById('cmpGrid').innerHTML = `
+    <div class="cmp-box before">
+      <h3 class="before">現状（個人事業のみ）</h3>
+      <div class="cmp-amount before">${fmt(total_now)}</div>
+      <div class="cmp-detail">
+        所得税＋復興：${fmt(stax_now)}<br>
+        住民税：${fmt(juminzei_now)}<br>
+        個人事業税：${fmt(jigyozei_now)}<br>
+        国民健康保険：${fmt(kokuho_now)}<br>
+        国民年金：${fmt(nenkin_now)}
+      </div>
+    </div>
+    <div class="cmp-box after">
+      <h3 class="after">マイクロ法人設立後</h3>
+      <div class="cmp-amount after">${fmt(total_after)}</div>
+      <div class="cmp-detail">
+        所得税＋復興（個人）：${fmt(stax2)}<br>
+        住民税（個人）：${fmt(juminzei2)}<br>
+        個人事業税：${fmt(jigyozei2)}<br>
+        社保 本人負担：${fmt(shakai.kojin)}<br>
+        社保 雇用主負担：${fmt(shakai.hojin)}<br>
+        マイクロ法人税等：${fmt(microCorpTax)}
+      </div>
+    </div>`;
+
+  document.getElementById('detailTable').innerHTML = `
+    <thead><tr><th>項目</th><th>現状</th><th>マイクロ法人後</th><th>差額</th></tr></thead>
+    <tbody>
+      <tr class="section"><td colspan="4">▼ 個人側</td></tr>
+      <tr><td>個人事業所得</td><td>${fmt(jigyoShotoku)}</td><td>${fmt(jigyoShotoku2)}</td><td>—</td></tr>
+      <tr><td>役員報酬（給与所得）</td><td>—</td><td>${fmt(microAnnual)}</td><td>+${fmt(microAnnual)}</td></tr>
+      <tr><td>所得税＋復興</td><td>${fmt(stax_now)}</td><td>${fmt(stax2)}</td><td>${fmt(stax2-stax_now)}</td></tr>
+      <tr><td>住民税</td><td>${fmt(juminzei_now)}</td><td>${fmt(juminzei2)}</td><td>${fmt(juminzei2-juminzei_now)}</td></tr>
+      <tr><td>個人事業税</td><td>${fmt(jigyozei_now)}</td><td>${fmt(jigyozei2)}</td><td>${fmt(jigyozei2-jigyozei_now)}</td></tr>
+      <tr><td>国民健康保険 / 社保本人</td><td>${fmt(kokuho_now)}</td><td>${fmt(shakai.kojin)}</td><td style="color:${shakai.kojin<kokuho_now?'#15803d':'#be123c'}">${fmt(shakai.kojin-kokuho_now)}</td></tr>
+      <tr><td>国民年金 / 社保含む</td><td>${fmt(nenkin_now)}</td><td>—（社保に統合）</td><td>▲${fmt(nenkin_now)}</td></tr>
+      <tr class="section"><td colspan="4">▼ 法人側（マイクロ法人）</td></tr>
+      <tr><td>売上</td><td>—</td><td>${fmt(microUriage)}</td><td>—</td></tr>
+      <tr><td>役員報酬（損金）</td><td>—</td><td>${fmt(microAnnual)}</td><td>—</td></tr>
+      <tr><td>社保 雇用主負担（損金）</td><td>—</td><td>${fmt(shakai.hojin)}</td><td>—</td></tr>
+      <tr><td>法人税等</td><td>—</td><td>${fmt(microCorpTax)}</td><td>—</td></tr>
+      <tr class="total"><td>合計 税・社保</td><td>${fmt(total_now)}</td><td>${fmt(total_after)}</td><td style="color:${save>0?'#15803d':'#be123c'};font-weight:700">${fmt(save>0?-save:save)}</td></tr>
+    </tbody>`;
+
+  document.getElementById('resultCard').style.display='block';
+  document.getElementById('resultCard').scrollIntoView({behavior:'smooth'});
+}
+window.addEventListener('DOMContentLoaded', calculate);
+</script>
+</body>
+</html>
