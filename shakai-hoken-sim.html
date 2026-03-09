@@ -239,8 +239,14 @@ window.addEventListener('DOMContentLoaded',()=>{
     const kojin = Math.round(s*0.0915);
     tbody.innerHTML += `<tr><td>${g}等級</td><td>${s.toLocaleString()}円</td><td>${r}円</td><td>${kojin.toLocaleString()}円</td></tr>`;
   });
+  // ツール間引き継ぎ
+  if (typeof receiveHandoff === 'function') {
+    const ok = receiveHandoff({ monthly: 'directAmount' });
+    if (ok) { document.getElementById('mode').value = 'direct'; document.getElementById('mode').dispatchEvent(new Event('change')); }
+  }
   calculate();
 });
 </script>
+<script src="shared.js"></script>
 </body>
 </html>

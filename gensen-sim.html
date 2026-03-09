@@ -346,6 +346,11 @@ function calcHoshu() {
   document.getElementById('hoshuResult').style.display = 'block';
   document.getElementById('hoshuResult').scrollIntoView({ behavior: 'smooth' });
 }
+
+window.addEventListener('DOMContentLoaded', () => {
+  if (typeof receiveHandoff === 'function') receiveHandoff({ kyuyo_monthly: 'kyuyo' });
+});
 </script>
+<script src="shared.js"></script>
 </body>
 </html>

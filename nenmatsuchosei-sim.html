@@ -328,7 +328,11 @@ function calculate() {
   document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
 }
 
-window.addEventListener('DOMContentLoaded', calculate);
+window.addEventListener('DOMContentLoaded', () => {
+  if (typeof receiveHandoff === 'function') receiveHandoff({ kyuyo: 'kyuyo' });
+  calculate();
+});
 </script>
+<script src="shared.js"></script>
 </body>
 </html>

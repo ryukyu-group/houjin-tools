@@ -11,14 +11,57 @@
   header h1 { font-size: 1.5rem; font-weight: 700; }
   header p { font-size: 0.85rem; opacity: 0.8; margin-top: 6px; }
   .container { max-width: 960px; margin: 36px auto; padding: 0 16px 60px; }
-  .section-title { font-size: 0.78rem; font-weight: 700; color: #1a3a5c; text-transform: uppercase; letter-spacing: 0.06em; margin: 28px 0 10px; padding-bottom: 5px; border-bottom: 1px solid #e2e8f0; }
+
+  /* 検索バー */
+  .search-wrap { margin-bottom: 20px; position: relative; }
+  .search-wrap input {
+    width: 100%; padding: 12px 44px 12px 16px;
+    border: 2px solid #d0d5dd; border-radius: 10px;
+    font-size: 0.95rem; font-family: inherit;
+    background: #fff; box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+    transition: border-color 0.2s;
+  }
+  .search-wrap input:focus { outline: none; border-color: #1a3a5c; }
+  .search-wrap .search-icon {
+    position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    font-size: 1.1rem; color: #aaa; pointer-events: none;
+  }
+  .search-count { font-size: 0.78rem; color: #888; margin-top: 6px; }
+
+  /* 最近使ったツール */
+  #recentSection { margin-bottom: 4px; }
+  .recent-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .recent-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #fff; border: 1.5px solid #c7d9f0; border-radius: 20px;
+    padding: 5px 12px; font-size: 0.78rem; color: #1a3a5c;
+    text-decoration: none; font-weight: 600;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .recent-chip:hover { background: #eef4ff; border-color: #1a3a5c; }
+  .recent-chip .chip-icon { font-size: 0.9rem; }
+
+  .section-title {
+    font-size: 0.78rem; font-weight: 700; color: #1a3a5c;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin: 28px 0 10px; padding-bottom: 5px; border-bottom: 1px solid #e2e8f0;
+  }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
-  .card { background: #fff; border-radius: 11px; box-shadow: 0 2px 10px rgba(0,0,0,0.07); padding: 20px; text-decoration: none; color: #333; transition: transform 0.18s, box-shadow 0.18s; display: flex; flex-direction: column; }
+  .card {
+    background: #fff; border-radius: 11px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.07); padding: 20px;
+    text-decoration: none; color: #333;
+    transition: transform 0.18s, box-shadow 0.18s;
+    display: flex; flex-direction: column;
+  }
   .card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
+  .card.hidden { display: none; }
   .card .icon { font-size: 1.7rem; margin-bottom: 9px; }
   .card h2 { font-size: 0.95rem; color: #1a3a5c; margin-bottom: 5px; font-weight: 700; line-height: 1.4; }
   .card p { font-size: 0.78rem; color: #666; line-height: 1.6; flex: 1; }
   .card .tag { display: inline-block; background: #eef4ff; color: #1a3a5c; font-size: 0.68rem; padding: 2px 6px; border-radius: 4px; margin-top: 9px; font-weight: 600; }
+  .no-result { display: none; text-align: center; padding: 32px; color: #aaa; font-size: 0.9rem; }
+
   footer { text-align: center; color: #aaa; font-size: 0.75rem; padding: 16px; }
 </style>
 </head>
@@ -29,53 +72,135 @@
 </header>
 <div class="container">
 
-  <div class="section-title">法人税・決算・経営</div>
-  <div class="grid">
-    <a class="card" href="houjin-zei-sim.html"><div class="icon">🏢</div><h2>法人税シミュレーション</h2><p>法人税・事業税・住民税を都道府県別に計算。4プランの税負担を比較。</p><span class="tag">都道府県対応</span></a>
-    <a class="card" href="kessan-yosoku-sim.html"><div class="icon">📊</div><h2>決算予測シミュレーション</h2><p>実績と残り月数の予測から期末利益・税額を着地予測。売上進捗も可視化。</p><span class="tag">着地予測</span></a>
-    <a class="card" href="shikinguri-sim.html"><div class="icon">💧</div><h2>資金繰りシミュレーション</h2><p>月次収支を入力して年間キャッシュフローを予測。資金ショートリスクを可視化。</p><span class="tag">CF予測</span></a>
-    <a class="card" href="hojinka-sim.html"><div class="icon">🔄</div><h2>法人化シミュレーション</h2><p>個人事業主 vs 法人化の税・社保負担を比較。法人化のメリットを試算。</p><span class="tag">個人vs法人</span></a>
-    <a class="card" href="micro-hojin-sim.html"><div class="icon">🔬</div><h2>マイクロ法人シミュレーション</h2><p>個人事業＋マイクロ法人で国保→社保に切り替え。節税・社保節約効果を試算。</p><span class="tag">社保節約</span></a>
-    <a class="card" href="bep-sim.html"><div class="icon">📐</div><h2>損益分岐点・事業計画</h2><p>損益分岐点・安全余裕率・限界利益を算出。売上成長率を設定して5年計画を試算。</p><span class="tag">5年計画対応</span></a>
+  <!-- 検索バー -->
+  <div class="search-wrap">
+    <input type="text" id="searchInput" placeholder="ツールを検索（例：法人税、年末調整、借入…）" oninput="filterCards()">
+    <span class="search-icon">🔍</span>
+  </div>
+  <div class="search-count" id="searchCount"></div>
+
+  <!-- 最近使ったツール -->
+  <div id="recentSection" style="display:none">
+    <div class="section-title">最近使ったツール</div>
+    <div class="recent-grid" id="recentGrid"></div>
   </div>
 
-  <div class="section-title">役員報酬・給与・源泉</div>
-  <div class="grid">
-    <a class="card" href="yakuin-hoshu-sim.html"><div class="icon">💼</div><h2>役員報酬シミュレーション</h2><p>役員報酬別に法人税等・個人税等・社保の合計コストを比較。</p><span class="tag">社会保険込み</span></a>
-    <a class="card" href="gensen-sim.html"><div class="icon">📋</div><h2>源泉所得税シミュレーション</h2><p>給与（月次）・賞与・報酬料金の源泉徴収税額を計算。賞与税額表に対応。</p><span class="tag">給与・賞与・報酬</span></a>
-    <a class="card" href="shakat-yachin-sim.html"><div class="icon">🏠</div><h2>役員社宅家賃シミュレーション</h2><p>役員社宅の法定家賃（最低負担額）を固定資産税標準額から自動算出。</p><span class="tag">節税効果あり</span></a>
-    <a class="card" href="shakai-hoken-sim.html"><div class="icon">🛡️</div><h2>社会保険料シミュレーション</h2><p>標準報酬月額から健康保険・厚生年金の本人・会社負担額を試算。都道府県別対応。</p><span class="tag">都道府県対応</span></a>
-    <a class="card" href="nenmatsuchosei-sim.html"><div class="icon">📅</div><h2>年末調整シミュレーション</h2><p>年間給与・各種控除から所得税額を計算し、源泉徴収との過不足（還付・追徴）を試算。</p><span class="tag">還付額試算</span></a>
-    <a class="card" href="kyuyo-meisai.html"><div class="icon">🧾</div><h2>給与明細書テンプレート</h2><p>支給・控除項目を入力して給与明細書を作成。そのまま印刷可能なHTMLテンプレート。</p><span class="tag">印刷対応</span></a>
+  <div id="allTools">
+    <div class="section-title">法人税・決算・経営</div>
+    <div class="grid">
+      <a class="card" href="houjin-zei-sim.html" data-keywords="法人税 事業税 住民税 都道府県 法人 決算"><div class="icon">🏢</div><h2>法人税シミュレーション</h2><p>法人税・事業税・住民税を都道府県別に計算。4プランの税負担を比較。</p><span class="tag">都道府県対応</span></a>
+      <a class="card" href="kessan-yosoku-sim.html" data-keywords="決算 予測 着地 利益 税額 進捗"><div class="icon">📊</div><h2>決算予測シミュレーション</h2><p>実績と残り月数の予測から期末利益・税額を着地予測。売上進捗も可視化。</p><span class="tag">着地予測</span></a>
+      <a class="card" href="shikinguri-sim.html" data-keywords="資金繰り キャッシュフロー CF 資金ショート 月次"><div class="icon">💧</div><h2>資金繰りシミュレーション</h2><p>月次収支を入力して年間キャッシュフローを予測。資金ショートリスクを可視化。</p><span class="tag">CF予測</span></a>
+      <a class="card" href="hojinka-sim.html" data-keywords="法人化 個人 法人 比較 節税 社保"><div class="icon">🔄</div><h2>法人化シミュレーション</h2><p>個人事業主 vs 法人化の税・社保負担を比較。法人化のメリットを試算。</p><span class="tag">個人vs法人</span></a>
+      <a class="card" href="micro-hojin-sim.html" data-keywords="マイクロ法人 社会保険 国保 節税 節約"><div class="icon">🔬</div><h2>マイクロ法人シミュレーション</h2><p>個人事業＋マイクロ法人で国保→社保に切り替え。節税・社保節約効果を試算。</p><span class="tag">社保節約</span></a>
+      <a class="card" href="bep-sim.html" data-keywords="損益分岐点 BEP 限界利益 安全余裕率 事業計画 固定費 変動費"><div class="icon">📐</div><h2>損益分岐点・事業計画</h2><p>損益分岐点・安全余裕率・限界利益を算出。売上成長率を設定して5年計画を試算。</p><span class="tag">5年計画対応</span></a>
+    </div>
+
+    <div class="section-title">役員報酬・給与・源泉</div>
+    <div class="grid">
+      <a class="card" href="yakuin-hoshu-sim.html" data-keywords="役員報酬 役員 報酬 社保 所得税 比較"><div class="icon">💼</div><h2>役員報酬シミュレーション</h2><p>役員報酬別に法人税等・個人税等・社保の合計コストを比較。</p><span class="tag">社会保険込み</span></a>
+      <a class="card" href="gensen-sim.html" data-keywords="源泉 源泉徴収 源泉所得税 給与 賞与 報酬"><div class="icon">📋</div><h2>源泉所得税シミュレーション</h2><p>給与（月次）・賞与・報酬料金の源泉徴収税額を計算。賞与税額表に対応。</p><span class="tag">給与・賞与・報酬</span></a>
+      <a class="card" href="shakat-yachin-sim.html" data-keywords="社宅 家賃 役員 節税 法定家賃"><div class="icon">🏠</div><h2>役員社宅家賃シミュレーション</h2><p>役員社宅の法定家賃（最低負担額）を固定資産税標準額から自動算出。</p><span class="tag">節税効果あり</span></a>
+      <a class="card" href="shakai-hoken-sim.html" data-keywords="社会保険 健康保険 厚生年金 標準報酬 社保 協会けんぽ"><div class="icon">🛡️</div><h2>社会保険料シミュレーション</h2><p>標準報酬月額から健康保険・厚生年金の本人・会社負担額を試算。都道府県別対応。</p><span class="tag">都道府県対応</span></a>
+      <a class="card" href="nenmatsuchosei-sim.html" data-keywords="年末調整 還付 追徴 扶養 控除 所得税 給与"><div class="icon">📅</div><h2>年末調整シミュレーション</h2><p>年間給与・各種控除から所得税額を計算し、源泉徴収との過不足（還付・追徴）を試算。</p><span class="tag">還付額試算</span></a>
+      <a class="card" href="kyuyo-meisai.html" data-keywords="給与明細 明細書 給与 印刷 テンプレート"><div class="icon">🧾</div><h2>給与明細書テンプレート</h2><p>支給・控除項目を入力して給与明細書を作成。そのまま印刷可能なHTMLテンプレート。</p><span class="tag">印刷対応</span></a>
+    </div>
+
+    <div class="section-title">消費税</div>
+    <div class="grid">
+      <a class="card" href="shouhizei-sim.html" data-keywords="消費税 本則 簡易 2割特例 課税 仕入税額控除"><div class="icon">🧾</div><h2>消費税シミュレーション</h2><p>本則課税と簡易課税の納税額を比較し、有利な課税方式を判定。2割特例対応。</p><span class="tag">2割特例対応</span></a>
+      <a class="card" href="invoice-sim.html" data-keywords="インボイス 適格請求書 免税 登録 2割特例 インボイス制度"><div class="icon">🔖</div><h2>インボイス登録シミュレーション</h2><p>免税・課税事業者別に登録の要否を判定。2割特例・簡易・本則の税負担と取引リスクを比較。</p><span class="tag">2割特例対応</span></a>
+    </div>
+
+    <div class="section-title">個人事業主・確定申告</div>
+    <div class="grid">
+      <a class="card" href="kojin-jigyo-sim.html" data-keywords="個人事業主 確定申告 所得税 住民税 国保 青色申告 事業税"><div class="icon">📝</div><h2>個人事業主 確定申告</h2><p>事業所得・所得税・住民税・個人事業税・国民健康保険料を一括試算。青色申告対応。</p><span class="tag">青色申告対応</span></a>
+      <a class="card" href="kokuho-sim.html" data-keywords="国保 国民健康保険 任意継続 退職 比較 健康保険"><div class="icon">🏥</div><h2>国保 vs 任意継続 比較</h2><p>退職後の健康保険を比較。国民健康保険と任意継続の月額・年額・2年合計を算出。</p><span class="tag">退職後の選択</span></a>
+      <a class="card" href="fx-crypto-sim.html" data-keywords="FX 仮想通貨 ビットコイン 雑所得 申告分離 海外FX 税金"><div class="icon">📈</div><h2>FX・仮想通貨 税金</h2><p>国内FX（申告分離20.315%）・海外FX・仮想通貨（総合課税）の税額を計算。</p><span class="tag">申告分離・総合</span></a>
+    </div>
+
+    <div class="section-title">資産・借入・減価償却</div>
+    <div class="grid">
+      <a class="card" href="kariire-sim.html" data-keywords="借入 返済 金利 元利均等 元金均等 融資 ローン"><div class="icon">🏦</div><h2>借入返済シミュレーション</h2><p>元利均等・元金均等を比較。総支払利息・返済スケジュール表示。据置・ボーナス対応。</p><span class="tag">スケジュール付</span></a>
+      <a class="card" href="genka-shokaku-sim.html" data-keywords="減価償却 定額 定率 一括 少額 中古 耐用年数"><div class="icon">📉</div><h2>減価償却シミュレーション</h2><p>定額法・定率法・一括・少額の4方式に対応。中古資産の耐用年数も自動計算。</p><span class="tag">中古資産対応</span></a>
+      <a class="card" href="kashidaore-sim.html" data-keywords="貸倒引当金 法定繰入率 繰入限度額 売掛金 債権"><div class="icon">📌</div><h2>貸倒引当金 繰入限度額計算</h2><p>業種別の法定繰入率を使って一括評価金銭債権の貸倒引当金繰入限度額を自動計算。</p><span class="tag">業種別対応</span></a>
+    </div>
+
+    <div class="section-title">税金（個人）</div>
+    <div class="grid">
+      <a class="card" href="sozoku-sim.html" data-keywords="相続税 相続 遺産 基礎控除 配偶者控除 相続人"><div class="icon">⚖️</div><h2>相続税シミュレーション</h2><p>遺産総額・相続人構成から相続税の概算を計算。配偶者控除・未成年控除に対応。</p><span class="tag">配偶者控除対応</span></a>
+      <a class="card" href="zouyo-sim.html" data-keywords="贈与税 贈与 暦年 相続時精算 2024 改正"><div class="icon">🎁</div><h2>贈与税シミュレーション</h2><p>暦年課税・相続時精算課税の贈与税額を計算。2024年改正（基礎控除新設）対応。</p><span class="tag">2024年改正対応</span></a>
+    </div>
   </div>
 
-  <div class="section-title">消費税</div>
-  <div class="grid">
-    <a class="card" href="shouhizei-sim.html"><div class="icon">🧾</div><h2>消費税シミュレーション</h2><p>本則課税と簡易課税の納税額を比較し、有利な課税方式を判定。2割特例対応。</p><span class="tag">2割特例対応</span></a>
-    <a class="card" href="invoice-sim.html"><div class="icon">🔖</div><h2>インボイス登録シミュレーション</h2><p>免税・課税事業者別に登録の要否を判定。2割特例・簡易・本則の税負担と取引リスクを比較。</p><span class="tag">2割特例対応</span></a>
-  </div>
-
-  <div class="section-title">個人事業主・確定申告</div>
-  <div class="grid">
-    <a class="card" href="kojin-jigyo-sim.html"><div class="icon">📝</div><h2>個人事業主 確定申告</h2><p>事業所得・所得税・住民税・個人事業税・国民健康保険料を一括試算。青色申告対応。</p><span class="tag">青色申告対応</span></a>
-    <a class="card" href="kokuho-sim.html"><div class="icon">🏥</div><h2>国保 vs 任意継続 比較</h2><p>退職後の健康保険を比較。国民健康保険と任意継続の月額・年額・2年合計を算出。</p><span class="tag">退職後の選択</span></a>
-    <a class="card" href="fx-crypto-sim.html"><div class="icon">📈</div><h2>FX・仮想通貨 税金</h2><p>国内FX（申告分離20.315%）・海外FX・仮想通貨（総合課税）の税額を計算。</p><span class="tag">申告分離・総合</span></a>
-  </div>
-
-  <div class="section-title">資産・借入・減価償却</div>
-  <div class="grid">
-    <a class="card" href="kariire-sim.html"><div class="icon">🏦</div><h2>借入返済シミュレーション</h2><p>元利均等・元金均等を比較。総支払利息・返済スケジュール表示。据置・ボーナス対応。</p><span class="tag">スケジュール付</span></a>
-    <a class="card" href="genka-shokaku-sim.html"><div class="icon">📉</div><h2>減価償却シミュレーション</h2><p>定額法・定率法・一括・少額の4方式に対応。中古資産の耐用年数も自動計算。</p><span class="tag">中古資産対応</span></a>
-    <a class="card" href="kashidaore-sim.html"><div class="icon">🏦</div><h2>貸倒引当金 繰入限度額計算</h2><p>業種別の法定繰入率を使って一括評価金銭債権の貸倒引当金繰入限度額を自動計算。</p><span class="tag">業種別対応</span></a>
-  </div>
-
-  <div class="section-title">税金（個人）</div>
-  <div class="grid">
-    <a class="card" href="sozoku-sim.html"><div class="icon">⚖️</div><h2>相続税シミュレーション</h2><p>遺産総額・相続人構成から相続税の概算を計算。配偶者控除・未成年控除に対応。</p><span class="tag">配偶者控除対応</span></a>
-    <a class="card" href="zouyo-sim.html"><div class="icon">🎁</div><h2>贈与税シミュレーション</h2><p>暦年課税・相続時精算課税の贈与税額を計算。2024年改正（基礎控除新設）対応。</p><span class="tag">2024年改正対応</span></a>
-  </div>
+  <div class="no-result" id="noResult">該当するツールが見つかりませんでした</div>
 
 </div>
 <footer>参考値です。実際の税額・社会保険料は税理士・社労士にご確認ください。</footer>
+
+<script>
+// ===== 検索フィルター =====
+function filterCards() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const cards = document.querySelectorAll('#allTools .card');
+  let visible = 0;
+
+  cards.forEach(card => {
+    const text = (card.dataset.keywords || '') + ' ' + card.textContent;
+    const match = !q || q.split(/\s+/).every(word => text.toLowerCase().includes(word));
+    card.classList.toggle('hidden', !match);
+    if (match) visible++;
+  });
+
+  // セクションタイトルの表示制御
+  document.querySelectorAll('#allTools .section-title').forEach(title => {
+    const grid = title.nextElementSibling;
+    const hasVisible = grid && Array.from(grid.querySelectorAll('.card')).some(c => !c.classList.contains('hidden'));
+    title.style.display = hasVisible ? '' : 'none';
+    if (grid) grid.style.display = hasVisible ? '' : 'none';
+  });
+
+  const countEl = document.getElementById('searchCount');
+  const noResult = document.getElementById('noResult');
+  if (q) {
+    countEl.textContent = `${visible} 件のツールが見つかりました`;
+    noResult.style.display = visible === 0 ? 'block' : 'none';
+  } else {
+    countEl.textContent = '';
+    noResult.style.display = 'none';
+  }
+}
+
+// ===== 最近使ったツール =====
+(function () {
+  const ICONS = {
+    'houjin-zei-sim.html': '🏢', 'kessan-yosoku-sim.html': '📊',
+    'shikinguri-sim.html': '💧', 'hojinka-sim.html': '🔄',
+    'micro-hojin-sim.html': '🔬', 'bep-sim.html': '📐',
+    'yakuin-hoshu-sim.html': '💼', 'gensen-sim.html': '📋',
+    'shakat-yachin-sim.html': '🏠', 'shakai-hoken-sim.html': '🛡️',
+    'nenmatsuchosei-sim.html': '📅', 'kyuyo-meisai.html': '🧾',
+    'shouhizei-sim.html': '🧾', 'invoice-sim.html': '🔖',
+    'kojin-jigyo-sim.html': '📝', 'kokuho-sim.html': '🏥',
+    'fx-crypto-sim.html': '📈', 'kariire-sim.html': '🏦',
+    'genka-shokaku-sim.html': '📉', 'kashidaore-sim.html': '📌',
+    'sozoku-sim.html': '⚖️', 'zouyo-sim.html': '🎁',
+  };
+  try {
+    const recent = JSON.parse(localStorage.getItem('ht_recent') || '[]');
+    if (recent.length === 0) return;
+    const grid = document.getElementById('recentGrid');
+    recent.forEach(({ file, title }) => {
+      const icon = ICONS[file] || '📄';
+      const a = document.createElement('a');
+      a.className = 'recent-chip';
+      a.href = file;
+      a.innerHTML = `<span class="chip-icon">${icon}</span>${title}`;
+      grid.appendChild(a);
+    });
+    document.getElementById('recentSection').style.display = '';
+  } catch (e) {}
+})();
+</script>
 </body>
 </html>

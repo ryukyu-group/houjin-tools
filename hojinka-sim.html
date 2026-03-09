@@ -322,8 +322,10 @@ window.addEventListener('DOMContentLoaded', () => {
     if (p === '東京都') opt.selected = true;
     sel.appendChild(opt);
   });
+  if (typeof receiveHandoff === 'function') receiveHandoff({ kojin_profit: 'shotoku' });
   calculate();
 });
 </script>
+<script src="shared.js"></script>
 </body>
 </html>

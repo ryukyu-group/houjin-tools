@@ -314,11 +314,30 @@ function calculate() {
     '※ ふるさと納税：所得税は寄附金から2,000円を引いた額が控除対象（所得の40%上限）。住民税控除は別途計算。<br>' +
     '※ 実際の申告・納税は税理士にご確認ください。';
 
+  // 法人化連携ボタン
+  const jigyoShotoku = (parseFloat(document.getElementById('uriage').value)||0)
+                     - (parseFloat(document.getElementById('keihi').value)||0)
+                     - (parseFloat(document.getElementById('aokiro').value)||0);
+  let handoffEl = document.getElementById('kojin_handoff');
+  if (!handoffEl) {
+    handoffEl = document.createElement('div');
+    handoffEl.id = 'kojin_handoff';
+    handoffEl.style.marginTop = '14px';
+    document.getElementById('resultCard').appendChild(handoffEl);
+  }
+  handoffEl.innerHTML = `<span style="font-size:0.78rem;color:#666;">この数値で続けて計算 → </span>
+    <button style="padding:7px 14px;border:none;border-radius:7px;font-size:0.8rem;font-weight:700;cursor:pointer;background:#1a3a5c;color:#fff;font-family:inherit;"
+      onclick="sendToTool('hojinka-sim.html',{kojin_profit:${jigyoShotoku}})">法人化シミュレーション</button>`;
+
   document.getElementById('resultCard').style.display = 'block';
   document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
 }
 
-window.addEventListener('DOMContentLoaded', calculate);
+window.addEventListener('DOMContentLoaded', () => {
+  if (typeof receiveHandoff === 'function') receiveHandoff({ kojin_uriage: 'uriage', kojin_keihi: 'keihi' });
+  calculate();
+});
 </script>
+<script src="shared.js"></script>
 </body>
 </html>

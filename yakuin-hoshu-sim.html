@@ -133,6 +133,7 @@
     <h2>計算結果</h2>
     <div class="result-wrap" id="resultContent"></div>
     <p class="note" id="resultNote"></p>
+    <div id="handoffBtns" style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px;"></div>
   </div>
 
 </div>
@@ -322,6 +323,19 @@ function calculate() {
     '※ 実際の税額・社会保険料は税理士・社労士にご確認ください。';
   document.getElementById('resultCard').style.display = 'block';
   document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+
+  // ツール間連携ボタン（最適プランの月額報酬を引き継ぐ）
+  const hoshu1 = parseFloat(document.getElementById('hoshu1').value) || 0;
+  const btnStyle = 'padding:7px 14px;border:none;border-radius:7px;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:inherit;';
+  document.getElementById('handoffBtns').innerHTML = `
+    <span style="font-size:0.78rem;color:#666;align-self:center;">この数値で続けて計算 →</span>
+    <button style="${btnStyle}background:#1a3a5c;color:#fff;"
+      onclick="sendToTool('shakai-hoken-sim.html',{monthly:${hoshu1}})">社会保険料シミュレーション</button>
+    <button style="${btnStyle}background:#1a3a5c;color:#fff;"
+      onclick="sendToTool('nenmatsuchosei-sim.html',{kyuyo:${hoshu1 * 12}})">年末調整シミュレーション</button>
+    <button style="${btnStyle}background:#1a3a5c;color:#fff;"
+      onclick="sendToTool('gensen-sim.html',{kyuyo_monthly:${hoshu1}})">源泉所得税シミュレーション</button>
+  `;
 }
 
 // ── 初期化 ──────────────────────────────────────────────────
@@ -336,5 +350,6 @@ window.addEventListener('DOMContentLoaded', () => {
   calculate();
 });
 </script>
+<script src="shared.js"></script>
 </body>
 </html>
