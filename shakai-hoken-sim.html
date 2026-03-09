@@ -60,11 +60,18 @@
       <div class="input-group">
         <label>都道府県（協会けんぽ）</label>
         <select id="pref">
-          <option value="tokyo" selected>東京都（9.98% / 11.58%）</option>
-          <option value="osaka">大阪府（10.22% / 11.82%）</option>
-          <option value="kanagawa">神奈川県（9.98% / 11.58%）</option>
-          <option value="aichi">愛知県（9.98% / 11.58%）</option>
-          <option value="other">その他（全国平均 9.98% / 11.58%）</option>
+          <option value="tokyo" selected>東京都（9.91% / 11.50%）</option>
+          <option value="kanagawa">神奈川県（9.92% / 11.51%）</option>
+          <option value="saitama">埼玉県（9.76% / 11.35%）</option>
+          <option value="chiba">千葉県（9.79% / 11.38%）</option>
+          <option value="aichi">愛知県（10.03% / 11.62%）</option>
+          <option value="osaka">大阪府（10.24% / 11.83%）</option>
+          <option value="kyoto">京都府（10.03% / 11.62%）</option>
+          <option value="hyogo">兵庫県（10.16% / 11.75%）</option>
+          <option value="hokkaido">北海道（10.31% / 11.90%）</option>
+          <option value="fukuoka">福岡県（10.31% / 11.90%）</option>
+          <option value="okinawa">沖縄県（9.44% / 11.03%）</option>
+          <option value="other">その他（全国平均 10.00% / 11.59%）</option>
         </select>
       </div>
       <div class="input-group">
@@ -167,12 +174,21 @@ function getKenpoHyojun(hoshu) {
   return Math.min(hoshu, 1390000);
 }
 
+// 協会けんぽ 令和7年3月分（2025年4月納付）以降の料率
+// 介護保険料率（全国一律）: 1.59%　合計 = 健保率 + 1.59%
 const RATES = {
-  tokyo:     {young:0.0998, kaigo:0.1158},
-  osaka:     {young:0.1022, kaigo:0.1182},
-  kanagawa:  {young:0.0998, kaigo:0.1158},
-  aichi:     {young:0.0998, kaigo:0.1158},
-  other:     {young:0.0998, kaigo:0.1158},
+  tokyo:    {young:0.0991, kaigo:0.1150},
+  kanagawa: {young:0.0992, kaigo:0.1151},
+  saitama:  {young:0.0976, kaigo:0.1135},
+  chiba:    {young:0.0979, kaigo:0.1138},
+  aichi:    {young:0.1003, kaigo:0.1162},
+  osaka:    {young:0.1024, kaigo:0.1183},
+  kyoto:    {young:0.1003, kaigo:0.1162},
+  hyogo:    {young:0.1016, kaigo:0.1175},
+  hokkaido: {young:0.1031, kaigo:0.1190},
+  fukuoka:  {young:0.1031, kaigo:0.1190},
+  okinawa:  {young:0.0944, kaigo:0.1103},
+  other:    {young:0.1000, kaigo:0.1159},
 };
 
 function fmt(n){return Math.round(n).toLocaleString('ja-JP')+'円';}

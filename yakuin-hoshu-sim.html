@@ -202,11 +202,11 @@ function kyuyoKojo(income) {
   return 1950000;
 }
 
-// ── 社会保険料（本人負担）── 協会けんぽ 東京 2024年度 40歳以上
-// 健保+介護: 5.82%（min=40,500 max=970,776）、厚生年金: 9.15%（min=96,624 max=713,700）
+// ── 社会保険料（本人負担）── 協会けんぽ 東京 令和7年度（2025年3月〜）40歳以上
+// 健保+介護: 5.75%（9.91%+1.59%=11.50% の半額）、厚生年金: 9.15%
 function calcSocialIns(annualSalary, ins) {
   if (!ins) return 0;
-  const kenpo = Math.min(Math.max(annualSalary * 0.0582, 40500), 970776);
+  const kenpo = Math.min(Math.max(annualSalary * 0.0575, 40500), 970776);
   const nenkin = Math.min(Math.max(annualSalary * 0.0915, 96624), 713700);
   return kenpo + nenkin;
 }
@@ -318,7 +318,7 @@ function calculate() {
   document.getElementById('resultContent').innerHTML = html;
   document.getElementById('resultNote').innerHTML =
     '※ 所得税：2024年度 超過累進税率（5%〜45%）＋復興特別所得税2.1%。住民税：所得割10%＋均等割5,000円。<br>' +
-    '※ 社会保険料：協会けんぽ（東京）2024年度 40歳以上基準。健康保険＋介護保険 本人5.82%・雇用主5.82%、厚生年金 本人9.15%・雇用主9.15%。<br>' +
+    '※ 社会保険料：協会けんぽ（東京）令和7年度（2025年3月〜）40歳以上基準。健康保険＋介護保険 本人5.75%・雇用主5.75%（合計11.50%）、厚生年金 本人9.15%・雇用主9.15%。<br>' +
     '※ 役員1名・他の所得なし・青色申告特別控除なしを前提とした概算です。<br>' +
     '※ 実際の税額・社会保険料は税理士・社労士にご確認ください。';
   document.getElementById('resultCard').style.display = 'block';

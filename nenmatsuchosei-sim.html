@@ -54,6 +54,16 @@
     <h2>給与・源泉徴収</h2>
     <div class="grid2">
       <div class="input-group">
+        <label>計算年分</label>
+        <select id="nenbun">
+          <option value="r6">令和6年分（2024年）</option>
+          <option value="r7" selected>令和7年分以降（2025年〜）</option>
+        </select>
+      </div>
+    </div>
+    <div class="info-box" id="nenbunNote" style="margin-top:10px"></div>
+    <div class="grid2" style="margin-top:14px">
+      <div class="input-group">
         <label>年間給与収入（税込・円）</label>
         <input type="number" id="kyuyo" value="6000000" step="100000" min="0">
       </div>
@@ -154,6 +164,17 @@
         </select>
       </div>
     </div>
+    <!-- 令和6年：定額減税 -->
+    <div id="teigakuArea" style="display:none">
+      <div class="subhead">定額減税（令和6年分のみ）</div>
+      <div class="info-box">令和6年分は所得税3万円×（本人＋扶養人数）の定額減税が適用されます。</div>
+      <div class="grid2">
+        <div class="input-group">
+          <label>定額減税の対象人数（本人含む）</label>
+          <input type="number" id="teigaku_nin" value="1" min="1" max="20" step="1">
+        </div>
+      </div>
+    </div>
     <button class="btn-calc" onclick="calculate()">計算する</button>
   </div>
 
@@ -168,14 +189,38 @@
 
 <script>
 // 給与所得控除額
-function kyuyoKojo(kyuyo) {
-  if (kyuyo <= 1625000) return 550000;
-  if (kyuyo <= 1800000) return Math.floor(kyuyo * 0.4) - 100000;
-  if (kyuyo <= 3600000) return Math.floor(kyuyo * 0.3) + 80000;
-  if (kyuyo <= 6600000) return Math.floor(kyuyo * 0.2) + 440000;
-  if (kyuyo <= 8500000) return Math.floor(kyuyo * 0.1) + 1100000;
-  return 1950000;
+function kyuyoKojo(kyuyo, nenbun) {
+  if (nenbun === 'r7') {
+    // 令和7年分以降（給与所得控除+10万円改正）
+    if (kyuyo <= 1900000) return 650000;
+    if (kyuyo <= 3600000) return Math.floor(kyuyo * 0.3) + 80000;
+    if (kyuyo <= 6600000) return Math.floor(kyuyo * 0.2) + 440000;
+    if (kyuyo <= 8500000) return Math.floor(kyuyo * 0.1) + 1100000;
+    return 1950000;
+  } else {
+    // 令和2年〜令和6年分
+    if (kyuyo <= 1625000) return 550000;
+    if (kyuyo <= 1800000) return Math.floor(kyuyo * 0.4) - 100000;
+    if (kyuyo <= 3600000) return Math.floor(kyuyo * 0.3) + 80000;
+    if (kyuyo <= 6600000) return Math.floor(kyuyo * 0.2) + 440000;
+    if (kyuyo <= 8500000) return Math.floor(kyuyo * 0.1) + 1100000;
+    return 1950000;
+  }
 }
+
+// 年分切替UI
+document.addEventListener('DOMContentLoaded', () => {
+  const updateNenbun = () => {
+    const v = document.getElementById('nenbun').value;
+    const isR6 = v === 'r6';
+    document.getElementById('teigakuArea').style.display = isR6 ? 'block' : 'none';
+    document.getElementById('nenbunNote').textContent = isR6
+      ? '令和6年分：給与所得控除（旧）、基礎控除48万円、定額減税あり'
+      : '令和7年分以降：給与所得控除+10万円改正、基礎控除58万円';
+  };
+  document.getElementById('nenbun').addEventListener('change', updateNenbun);
+  updateNenbun();
+});
 
 // 所得税率（速算表）
 function calcShotokuZei(taxableIncome) {
@@ -203,17 +248,15 @@ function haigushaKojo(type, kyuyoShotoku) {
 }
 
 function calculate() {
+  const nenbun = document.getElementById('nenbun').value;
+  const isR7 = nenbun === 'r7';
   const kyuyo = parseFloat(document.getElementById('kyuyo').value) || 0;
   const gensen = parseFloat(document.getElementById('gensen').value) || 0;
   const sonotaShotoku = parseFloat(document.getElementById('sonota_shotoku').value) || 0;
 
-  // 給与所得控除
-  const kyuyoKojoAmt = kyuyoKojo(kyuyo);
-  // 給与所得
+  // 給与所得控除（年分により異なる）
+  const kyuyoKojoAmt = kyuyoKojo(kyuyo, nenbun);
   let kyuyoShotoku = kyuyo - kyuyoKojoAmt;
-
-  // 所得金額調整控除（給与850万超で子・障害者がいる場合は省略）
-  // 合計所得
   const totalShotoku = kyuyoShotoku + sonotaShotoku;
 
   // 各種控除
@@ -237,8 +280,9 @@ function calculate() {
   const haigushaType = document.getElementById('haigusha').value;
   const haigushaKojoAmt = haigushaKojo(haigushaType, kyuyoShotoku);
 
-  // 基礎控除（合計所得2400万以下で48万円）
-  const kiso = totalShotoku <= 24000000 ? 480000 : 0;
+  // 基礎控除（令和7年以降58万円、令和6年以前48万円）
+  const kisoLimit = isR7 ? 580000 : 480000;
+  const kiso = totalShotoku <= 24000000 ? kisoLimit : 0;
 
   // 寄付金控除
   const kifuKojo = Math.max(kifu - 2000, 0);
@@ -255,6 +299,14 @@ function calculate() {
 
   // 住宅ローン控除（税額控除）
   shotokuZei = Math.max(shotokuZei - jutaku, 0);
+
+  // 定額減税（令和6年分のみ・本人+扶養1人につき所得税3万円）
+  let teigaku = 0;
+  if (!isR7) {
+    const nin = parseInt(document.getElementById('teigaku_nin').value) || 1;
+    teigaku = Math.min(30000 * nin, shotokuZei);
+    shotokuZei = Math.max(shotokuZei - teigaku, 0);
+  }
 
   // 復興特別所得税（2.1%）
   const fukko = Math.floor(shotokuZei * 0.021);
@@ -308,8 +360,10 @@ function calculate() {
     ['基礎控除', -kiso],
     ['所得控除合計', -kojoTotal],
     ['課税所得金額', kazeiShotoku],
-    ['所得税額', shotokuZei],
+    ['所得税額（控除前）', shotokuZei + (teigaku || 0) + (jutaku || 0)],
     ['住宅借入金等特別控除', -jutaku],
+    ...(!isR7 && teigaku > 0 ? [['定額減税（令和6年分）', -teigaku]] : []),
+    ['所得税額', shotokuZei],
     ['復興特別所得税（2.1%）', fukko],
     ['年間所得税額', totalZei],
   ];
