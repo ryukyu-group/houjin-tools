@@ -82,7 +82,7 @@
       if (!table.offsetParent && table.closest('[style*="display:none"]')) return;
       table.dataset.csvAdded = '1';
       const btn = document.createElement('button');
-      btn.textContent = '📥 CSVダウンロード';
+      btn.textContent = 'CSVダウンロード';
       btn.className = 'ht-csv-btn';
       btn.style.cssText = 'margin-top:8px;padding:5px 14px;background:#15803d;color:#fff;border:none;border-radius:6px;font-size:0.78rem;cursor:pointer;font-family:inherit;display:block;';
       btn.addEventListener('click', () => exportTableCSV(table));
@@ -175,7 +175,7 @@
       if (!el || el.dataset.printAdded || el.style.display === 'none') return;
       el.dataset.printAdded = '1';
       const btn = document.createElement('button');
-      btn.textContent = '🖨️ 印刷';
+      btn.textContent = '印刷';
       btn.className = 'ht-print-btn';
       btn.style.cssText = 'margin-top:10px;padding:6px 16px;background:#475569;color:#fff;border:none;border-radius:6px;font-size:0.78rem;cursor:pointer;font-family:inherit;';
       btn.addEventListener('click', () => window.print());
@@ -254,37 +254,37 @@
     fab.id = 'ht-fab';
     fab.style.cssText = 'position:fixed;bottom:20px;right:18px;display:flex;flex-direction:column;align-items:center;gap:8px;z-index:9999;';
 
-    const btnStyle = 'width:42px;height:42px;border-radius:50%;border:none;cursor:pointer;font-size:1.1rem;box-shadow:0 2px 10px rgba(0,0,0,0.22);transition:opacity 0.3s,transform 0.15s;font-family:inherit;display:flex;align-items:center;justify-content:center;';
+    const btnStyle = 'width:40px;height:40px;border-radius:8px;border:none;cursor:pointer;font-size:0.7rem;font-weight:700;letter-spacing:0.03em;box-shadow:0 1px 4px rgba(0,0,0,0.18);transition:opacity 0.3s,box-shadow 0.15s;font-family:inherit;display:flex;align-items:center;justify-content:center;line-height:1;';
 
     // ページトップ
     const topBtn = document.createElement('button');
-    topBtn.textContent = '▲';
+    topBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,9 7,4 12,9"/></svg>';
     topBtn.title = 'ページトップへ';
     topBtn.style.cssText = btnStyle + 'background:#1a3a5c;color:#fff;opacity:0;';
     topBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
-    topBtn.addEventListener('mouseenter', () => topBtn.style.transform = 'scale(1.1)');
-    topBtn.addEventListener('mouseleave', () => topBtn.style.transform = '');
+    topBtn.addEventListener('mouseenter', () => topBtn.style.boxShadow = '0 3px 10px rgba(0,0,0,0.28)');
+    topBtn.addEventListener('mouseleave', () => topBtn.style.boxShadow = '0 1px 4px rgba(0,0,0,0.18)');
     window.addEventListener('scroll', () => {
       topBtn.style.opacity = window.scrollY > 300 ? '1' : '0';
     }, { passive: true });
 
     // シェアボタン
     const shareBtn = document.createElement('button');
-    shareBtn.textContent = '🔗';
+    shareBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="2.5" r="1.5"/><circle cx="11" cy="11.5" r="1.5"/><circle cx="3" cy="7" r="1.5"/><line x1="4.4" y1="7.7" x2="9.6" y2="10.8"/><line x1="9.6" y1="3.2" x2="4.4" y2="6.3"/></svg>';
     shareBtn.title = '入力値をURLでシェア';
-    shareBtn.style.cssText = btnStyle + 'background:#f1f5f9;color:#1a3a5c;';
+    shareBtn.style.cssText = btnStyle + 'background:#fff;color:#1a3a5c;border:1px solid #e2e8f0;';
     shareBtn.addEventListener('click', shareCurrentState);
-    shareBtn.addEventListener('mouseenter', () => shareBtn.style.transform = 'scale(1.1)');
-    shareBtn.addEventListener('mouseleave', () => shareBtn.style.transform = '');
+    shareBtn.addEventListener('mouseenter', () => shareBtn.style.boxShadow = '0 3px 10px rgba(0,0,0,0.18)');
+    shareBtn.addEventListener('mouseleave', () => shareBtn.style.boxShadow = '0 1px 4px rgba(0,0,0,0.18)');
 
     // ホーム
     const homeBtn = document.createElement('a');
     homeBtn.href = 'index.html';
     homeBtn.title = 'ツール一覧へ';
-    homeBtn.style.cssText = btnStyle + 'background:#f1f5f9;color:#1a3a5c;font-size:1rem;text-decoration:none;';
-    homeBtn.textContent = '🏠';
-    homeBtn.addEventListener('mouseenter', () => homeBtn.style.transform = 'scale(1.1)');
-    homeBtn.addEventListener('mouseleave', () => homeBtn.style.transform = '');
+    homeBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1,6 7,1 13,6"/><polyline points="3,5.5 3,13 11,13 11,5.5"/><rect x="5" y="9" width="4" height="4" rx="0.5"/></svg>';
+    homeBtn.style.cssText = btnStyle + 'background:#fff;color:#1a3a5c;border:1px solid #e2e8f0;text-decoration:none;';
+    homeBtn.addEventListener('mouseenter', () => homeBtn.style.boxShadow = '0 3px 10px rgba(0,0,0,0.18)');
+    homeBtn.addEventListener('mouseleave', () => homeBtn.style.boxShadow = '0 1px 4px rgba(0,0,0,0.18)');
 
     fab.appendChild(topBtn);
     fab.appendChild(shareBtn);
