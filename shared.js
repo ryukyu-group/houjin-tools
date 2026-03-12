@@ -1,10 +1,12 @@
 /**
- * houjin-tools shared.js v2
+ * houjin-tools shared.js v3
  * ① 入力自動保存・復元     ② 最近使ったツール記録
  * ③ CSV自動挿入           ④ ツール間データ引き継ぎ
  * ⑤ 自動再計算（debounce）⑥ KPI値クリックコピー
- * ⑦ 印刷スタイル          ⑧ ページトップボタン
- * ⑨ 前回値復元後に自動計算
+ * ⑦ 印刷スタイル          ⑧ フローティングボタン
+ * ⑨ 前回値復元後に自動計算 ⑩ 万円換算リアルタイム表示
+ * ⑪ URLシェア機能         ⑫ Enterキーで計算実行
+ * ⑬ ダークモード対応
  */
 (function () {
   'use strict';
@@ -26,6 +28,8 @@
 
   function loadInputs() {
     try {
+      // URLシェアのハッシュが優先
+      if (loadFromHash()) return true;
       const raw = localStorage.getItem(PAGE_KEY);
       if (!raw) return false;
       const data = JSON.parse(raw);
@@ -53,7 +57,6 @@
 
   /* ---------------------------------------------------------------
    * 3. CSVダウンロードボタンの自動挿入
-   * 対象: table.detail / table.plan / table.ct / table.schedule
    * ------------------------------------------------------------ */
   window.exportTableCSV = function (table, filename) {
     const rows = Array.from(table.querySelectorAll('tr')).map(tr =>
@@ -76,17 +79,12 @@
     document.querySelectorAll(targets).forEach(table => {
       if (!table.querySelector('th')) return;
       if (table.dataset.csvAdded) return;
-      // display:none の親要素内にあるテーブルはスキップ
       if (!table.offsetParent && table.closest('[style*="display:none"]')) return;
       table.dataset.csvAdded = '1';
       const btn = document.createElement('button');
       btn.textContent = '📥 CSVダウンロード';
       btn.className = 'ht-csv-btn';
-      btn.style.cssText = [
-        'margin-top:8px', 'padding:5px 14px', 'background:#15803d',
-        'color:#fff', 'border:none', 'border-radius:6px', 'font-size:0.78rem',
-        'cursor:pointer', 'font-family:inherit', 'display:block',
-      ].join(';');
+      btn.style.cssText = 'margin-top:8px;padding:5px 14px;background:#15803d;color:#fff;border:none;border-radius:6px;font-size:0.78rem;cursor:pointer;font-family:inherit;display:block;';
       btn.addEventListener('click', () => exportTableCSV(table));
       table.after(btn);
     });
@@ -94,8 +92,6 @@
 
   /* ---------------------------------------------------------------
    * 4. ツール間データ引き継ぎ
-   * 使い方（送信側）: sendToTool('shakai-hoken-sim.html', { monthly: 400000 })
-   * 使い方（受信側）: receiveHandoff({ monthly: 'kyuyo_input_id' })
    * ------------------------------------------------------------ */
   window.sendToTool = function (url, data) {
     try {
@@ -120,9 +116,7 @@
   };
 
   /* ---------------------------------------------------------------
-   * 5. 自動再計算
-   * 入力変更から600ms後、最寄りの .btn-calc をクリック
-   * scrollIntoView は自動計算時に抑制（画面がガクガクしない）
+   * 5. 自動再計算（debounce 600ms）
    * ------------------------------------------------------------ */
   let _autoTimer = null;
   let _suppressScroll = false;
@@ -133,7 +127,6 @@
   };
 
   function clickCalcBtn(targetEl) {
-    // 変更要素の最寄りの btn-calc を探す
     let btn = null;
     let el = targetEl ? targetEl.parentElement : null;
     while (el && el !== document.body) {
@@ -154,7 +147,7 @@
   }
 
   /* ---------------------------------------------------------------
-   * 6. KPI値クリックコピー & 印刷ボタン挿入
+   * 6. KPI値クリックコピー & 印刷ボタン
    * ------------------------------------------------------------ */
   function addCopyToKpi() {
     document.querySelectorAll('.kpi .val:not([data-copy])').forEach(valEl => {
@@ -176,7 +169,6 @@
   }
 
   function addPrintBtn() {
-    // resultCard / resultArea / resultContent など visible な結果コンテナに印刷ボタンを追加
     const selectors = ['#resultCard', '#resultArea', '#resultContent', '#resultMain', '#results'];
     selectors.forEach(sel => {
       const el = document.querySelector(sel);
@@ -185,16 +177,15 @@
       const btn = document.createElement('button');
       btn.textContent = '🖨️ 印刷';
       btn.className = 'ht-print-btn';
-      btn.style.cssText = [
-        'margin-top:10px', 'padding:6px 16px', 'background:#475569',
-        'color:#fff', 'border:none', 'border-radius:6px',
-        'font-size:0.78rem', 'cursor:pointer', 'font-family:inherit',
-      ].join(';');
+      btn.style.cssText = 'margin-top:10px;padding:6px 16px;background:#475569;color:#fff;border:none;border-radius:6px;font-size:0.78rem;cursor:pointer;font-family:inherit;';
       btn.addEventListener('click', () => window.print());
       el.appendChild(btn);
     });
   }
 
+  /* ---------------------------------------------------------------
+   * 7. 印刷スタイル
+   * ------------------------------------------------------------ */
   function injectPrintStyles() {
     if (document.getElementById('ht-print-style')) return;
     const s = document.createElement('style');
@@ -209,59 +200,217 @@
         [id*="result"] { display: block !important; }
         .kpi { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         table th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .ht-man-hint { display: none !important; }
       }
     `;
     document.head.appendChild(s);
   }
 
   /* ---------------------------------------------------------------
-   * 7. フローティングアクションエリア（ページトップ）
+   * 8. フローティングボタン（ページトップ・ホーム・シェア）
    * ------------------------------------------------------------ */
   function addFab() {
     if (document.getElementById('ht-fab') || currentPage === 'index.html') return;
     const fab = document.createElement('div');
     fab.id = 'ht-fab';
-    fab.style.cssText = [
-      'position:fixed', 'bottom:20px', 'right:18px',
-      'display:flex', 'flex-direction:column', 'align-items:center', 'gap:8px',
-      'z-index:9999',
-    ].join(';');
+    fab.style.cssText = 'position:fixed;bottom:20px;right:18px;display:flex;flex-direction:column;align-items:center;gap:8px;z-index:9999;';
 
-    const btnStyle = [
-      'width:42px', 'height:42px', 'border-radius:50%',
-      'border:none', 'cursor:pointer', 'font-size:1.1rem',
-      'box-shadow:0 2px 10px rgba(0,0,0,0.22)',
-      'transition:opacity 0.3s, transform 0.15s',
-      'font-family:inherit', 'display:flex',
-      'align-items:center', 'justify-content:center',
-    ].join(';');
+    const btnStyle = 'width:42px;height:42px;border-radius:50%;border:none;cursor:pointer;font-size:1.1rem;box-shadow:0 2px 10px rgba(0,0,0,0.22);transition:opacity 0.3s,transform 0.15s;font-family:inherit;display:flex;align-items:center;justify-content:center;';
 
-    // ページトップボタン
+    // ページトップ
     const topBtn = document.createElement('button');
     topBtn.textContent = '▲';
     topBtn.title = 'ページトップへ';
-    topBtn.style.cssText = btnStyle + ';background:#1a3a5c;color:#fff;opacity:0;';
+    topBtn.style.cssText = btnStyle + 'background:#1a3a5c;color:#fff;opacity:0;';
     topBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
     topBtn.addEventListener('mouseenter', () => topBtn.style.transform = 'scale(1.1)');
     topBtn.addEventListener('mouseleave', () => topBtn.style.transform = '');
-
-    // トップへ戻るボタンは300px以上スクロール時に表示
     window.addEventListener('scroll', () => {
       topBtn.style.opacity = window.scrollY > 300 ? '1' : '0';
     }, { passive: true });
 
-    // ホームへボタン
+    // シェアボタン
+    const shareBtn = document.createElement('button');
+    shareBtn.textContent = '🔗';
+    shareBtn.title = '入力値をURLでシェア';
+    shareBtn.style.cssText = btnStyle + 'background:#f1f5f9;color:#1a3a5c;';
+    shareBtn.addEventListener('click', shareCurrentState);
+    shareBtn.addEventListener('mouseenter', () => shareBtn.style.transform = 'scale(1.1)');
+    shareBtn.addEventListener('mouseleave', () => shareBtn.style.transform = '');
+
+    // ホーム
     const homeBtn = document.createElement('a');
     homeBtn.href = 'index.html';
     homeBtn.title = 'ツール一覧へ';
-    homeBtn.style.cssText = btnStyle + ';background:#f1f5f9;color:#1a3a5c;font-size:1rem;text-decoration:none;';
+    homeBtn.style.cssText = btnStyle + 'background:#f1f5f9;color:#1a3a5c;font-size:1rem;text-decoration:none;';
     homeBtn.textContent = '🏠';
     homeBtn.addEventListener('mouseenter', () => homeBtn.style.transform = 'scale(1.1)');
     homeBtn.addEventListener('mouseleave', () => homeBtn.style.transform = '');
 
     fab.appendChild(topBtn);
+    fab.appendChild(shareBtn);
     fab.appendChild(homeBtn);
     document.body.appendChild(fab);
+  }
+
+  /* ---------------------------------------------------------------
+   * 9. トースト通知
+   * ------------------------------------------------------------ */
+  function showToast(msg, isError) {
+    const toast = document.createElement('div');
+    toast.style.cssText = [
+      'position:fixed', 'bottom:76px', 'left:50%', 'transform:translateX(-50%)',
+      'background:' + (isError ? '#dc2626' : '#1a3a5c'),
+      'color:#fff', 'padding:9px 20px', 'border-radius:20px',
+      'font-size:0.85rem', 'z-index:10000', 'opacity:0',
+      'transition:opacity 0.25s', 'pointer-events:none',
+      'white-space:nowrap', 'box-shadow:0 2px 12px rgba(0,0,0,0.2)',
+    ].join(';');
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => { toast.style.opacity = '1'; });
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      setTimeout(() => toast.remove(), 300);
+    }, 2500);
+  }
+
+  /* ---------------------------------------------------------------
+   * 10. 万円換算リアルタイム表示
+   * input[type=number] の下に「= 350万円」と自動表示
+   * ------------------------------------------------------------ */
+  function addManDisplay() {
+    document.querySelectorAll('input[type=number]:not([data-man])').forEach(input => {
+      // max属性が小さければ金額入力ではない（割合・人数など）
+      const maxVal = parseFloat(input.max);
+      if (!isNaN(maxVal) && maxVal <= 200) return;
+
+      input.dataset.man = '1';
+      const hint = document.createElement('span');
+      hint.className = 'ht-man-hint';
+      hint.style.cssText = 'font-size:0.72rem;color:#888;margin-top:2px;display:block;min-height:1em;line-height:1;';
+      input.insertAdjacentElement('afterend', hint);
+
+      function update() {
+        const v = parseFloat(input.value);
+        if (!v || isNaN(v) || Math.abs(v) < 10000) { hint.textContent = ''; return; }
+        const abs = Math.abs(v);
+        const sign = v < 0 ? '−' : '= ';
+        if (abs >= 100000000) {
+          hint.textContent = sign + (abs / 100000000).toFixed(2).replace(/\.?0+$/, '') + '億円';
+        } else {
+          hint.textContent = sign + (abs / 10000).toFixed(1).replace(/\.0$/, '') + '万円';
+        }
+      }
+      input.addEventListener('input', update);
+      update();
+    });
+  }
+
+  /* ---------------------------------------------------------------
+   * 11. URLシェア機能
+   * ------------------------------------------------------------ */
+  function encodeState(obj) {
+    try { return btoa(unescape(encodeURIComponent(JSON.stringify(obj)))); } catch (e) { return ''; }
+  }
+
+  function decodeState(str) {
+    try { return JSON.parse(decodeURIComponent(escape(atob(str)))); } catch (e) { return null; }
+  }
+
+  function loadFromHash() {
+    const m = location.hash.match(/^#s=(.+)/);
+    if (!m) return false;
+    const data = decodeState(m[1]);
+    if (!data) return false;
+    Object.entries(data).forEach(([id, val]) => {
+      const el = document.getElementById(id);
+      if (el && el.tagName !== 'BUTTON') el.value = val;
+    });
+    // ハッシュを消してURLをきれいに
+    history.replaceState(null, '', location.pathname);
+    return true;
+  }
+
+  function shareCurrentState() {
+    const data = {};
+    document.querySelectorAll('input[id], select[id], textarea[id]').forEach(el => {
+      if (el.type !== 'file' && el.type !== 'button') data[el.id] = el.value;
+    });
+    const encoded = encodeState(data);
+    if (!encoded) { showToast('シェア失敗', true); return; }
+    const url = location.origin + location.pathname + '#s=' + encoded;
+    navigator.clipboard.writeText(url)
+      .then(() => showToast('URLをクリップボードにコピーしました！'))
+      .catch(() => {
+        // フォールバック: プロンプトで表示
+        prompt('このURLをコピーしてシェアしてください：', url);
+      });
+  }
+
+  /* ---------------------------------------------------------------
+   * 12. Enterキーで計算実行
+   * ------------------------------------------------------------ */
+  function bindEnterCalc() {
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      if (!e.target.matches('input[type=number], input[type=text], select')) return;
+      e.preventDefault();
+      clearTimeout(_autoTimer); // debounce をキャンセルして即実行
+      clickCalcBtn(e.target);
+    });
+  }
+
+  /* ---------------------------------------------------------------
+   * 13. ダークモード対応
+   * ------------------------------------------------------------ */
+  function injectDarkMode() {
+    if (document.getElementById('ht-dark-style')) return;
+    const s = document.createElement('style');
+    s.id = 'ht-dark-style';
+    s.textContent = `
+      @media (prefers-color-scheme: dark) {
+        body { background: #111827 !important; color: #e2e8f0 !important; }
+        header { background: #0f2440 !important; }
+        .card { background: #1f2937 !important; box-shadow: 0 2px 10px rgba(0,0,0,0.4) !important; color: #e2e8f0 !important; }
+        .card h2 { color: #93c5fd !important; }
+        .card p { color: #9ca3af !important; }
+        .card .tag { background: #1e3a5f !important; color: #93c5fd !important; }
+        input, select, textarea {
+          background: #374151 !important; color: #e2e8f0 !important;
+          border-color: #4b5563 !important;
+        }
+        input:focus, select:focus, textarea:focus { border-color: #60a5fa !important; }
+        .input-group label { color: #9ca3af !important; }
+        .info-box { background: #1e3a5f !important; color: #bfdbfe !important; }
+        .warn-box { background: #422006 !important; color: #fde68a !important; }
+        .subhead { color: #93c5fd !important; border-color: #374151 !important; }
+        table.dt th, table.rt th { background: #1e3a5f !important; }
+        table.dt td, table.rt td { border-color: #374151 !important; color: #d1d5db !important; }
+        table.dt td:first-child, table.rt td:first-child { color: #9ca3af !important; }
+        table.dt tr.total td { background: #1e3a5f !important; color: #93c5fd !important; }
+        table.dt tr.section td { background: #1f2937 !important; color: #93c5fd !important; }
+        .kpi.blue { background: #1e3a5f !important; border-color: #3b82f6 !important; }
+        .kpi.red  { background: #4c0519 !important; border-color: #f43f5e !important; }
+        .kpi.green{ background: #14532d !important; border-color: #22c55e !important; }
+        .kpi label { color: #9ca3af !important; }
+        .section-title { color: #93c5fd !important; border-color: #374151 !important; }
+        .note { color: #6b7280 !important; }
+        footer { color: #4b5563 !important; }
+        .ht-man-hint { color: #6b7280 !important; }
+        /* index.html */
+        .search-wrap input { background: #1f2937 !important; color: #e2e8f0 !important; border-color: #4b5563 !important; }
+        .search-count { color: #6b7280 !important; }
+        .recent-chip { background: #1f2937 !important; border-color: #374151 !important; color: #93c5fd !important; }
+        .fav-chip { background: #422006 !important; border-color: #92400e !important; color: #fde68a !important; }
+        .fav-btn { color: #4b5563 !important; }
+        .fav-btn.on { color: #f59e0b !important; }
+        .cat-tab { background: #1f2937 !important; border-color: #374151 !important; color: #9ca3af !important; }
+        .cat-tab.active { background: #1e3a5f !important; color: #93c5fd !important; border-color: #3b82f6 !important; }
+        .cat-tab:hover { border-color: #60a5fa !important; color: #93c5fd !important; }
+      }
+    `;
+    document.head.appendChild(s);
   }
 
   /* ---------------------------------------------------------------
@@ -272,8 +421,11 @@
     addCsvButtons();
     addFab();
     injectPrintStyles();
+    injectDarkMode();
+    addManDisplay();
+    bindEnterCalc();
 
-    // 前回値が復元された場合は自動計算（画面ロード直後）
+    // 前回値またはURLシェアから復元された場合は自動計算
     if (restored) {
       setTimeout(() => clickCalcBtn(null), 200);
     }
@@ -283,6 +435,7 @@
       addCsvButtons();
       addCopyToKpi();
       addPrintBtn();
+      addManDisplay();
     });
     obs.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
 

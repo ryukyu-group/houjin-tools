@@ -82,6 +82,16 @@
   .card .tag { display: inline-block; background: #eef4ff; color: #1a3a5c; font-size: 0.68rem; padding: 2px 6px; border-radius: 4px; margin-top: 9px; font-weight: 600; }
   .no-result { display: none; text-align: center; padding: 32px; color: #aaa; font-size: 0.9rem; }
 
+  /* カテゴリタブ */
+  .cat-tabs { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 22px; }
+  .cat-tab {
+    padding: 6px 14px; border-radius: 20px; border: 1.5px solid #d0d5dd;
+    background: #fff; color: #555; font-size: 0.82rem; cursor: pointer;
+    font-family: inherit; font-weight: 600; transition: all 0.15s;
+  }
+  .cat-tab:hover { border-color: #1a3a5c; color: #1a3a5c; }
+  .cat-tab.active { background: #1a3a5c; color: #fff; border-color: #1a3a5c; }
+
   footer { text-align: center; color: #aaa; font-size: 0.75rem; padding: 16px; }
 </style>
 </head>
@@ -109,6 +119,17 @@
   <div id="recentSection" style="display:none">
     <div class="section-title">最近使ったツール</div>
     <div class="recent-grid" id="recentGrid"></div>
+  </div>
+
+  <!-- カテゴリタブ -->
+  <div class="cat-tabs" id="catTabs">
+    <button class="cat-tab active" onclick="filterByCategory(this, null)">すべて</button>
+    <button class="cat-tab" onclick="filterByCategory(this, '法人税・決算・経営')">🏢 法人・決算</button>
+    <button class="cat-tab" onclick="filterByCategory(this, '役員報酬・給与・源泉')">💼 給与・源泉</button>
+    <button class="cat-tab" onclick="filterByCategory(this, '消費税')">🧾 消費税</button>
+    <button class="cat-tab" onclick="filterByCategory(this, '個人事業主・確定申告')">📝 個人事業主</button>
+    <button class="cat-tab" onclick="filterByCategory(this, '資産・借入・減価償却')">🏦 資産・借入</button>
+    <button class="cat-tab" onclick="filterByCategory(this, '税金（個人）')">⚖️ 相続・贈与</button>
   </div>
 
   <div id="allTools">
@@ -180,12 +201,48 @@ const ICONS = {
   'sozoku-sim.html': '⚖️', 'zouyo-sim.html': '🎁',
 };
 
+// ===== 現在のカテゴリフィルター状態 =====
+let _activeCat = null; // null = すべて
+
+// ===== カテゴリタブ切替 =====
+function filterByCategory(tabEl, catTitle) {
+  document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+  tabEl.classList.add('active');
+  _activeCat = catTitle;
+  // 検索ワードをリセット
+  document.getElementById('searchInput').value = '';
+  document.getElementById('searchCount').textContent = '';
+  document.getElementById('noResult').style.display = 'none';
+  applyFilters();
+}
+
 // ===== 検索フィルター =====
 function filterCards() {
+  _activeCat = null; // 検索時はカテゴリタブをリセット
+  document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector('.cat-tab')?.classList.add('active');
+  applyFilters();
+}
+
+// ===== 共通フィルター適用 =====
+function applyFilters() {
   const q = document.getElementById('searchInput').value.trim().toLowerCase();
   const cards = document.querySelectorAll('#allTools .card');
   let visible = 0;
 
+  // カテゴリタブで絞り込み中の場合: セクション単位で表示制御
+  if (_activeCat) {
+    document.querySelectorAll('#allTools .section-title').forEach(title => {
+      const grid = title.nextElementSibling;
+      const show = title.textContent.trim() === _activeCat;
+      title.style.display = show ? '' : 'none';
+      if (grid) grid.style.display = show ? '' : 'none';
+    });
+    cards.forEach(card => card.classList.remove('hidden'));
+    return;
+  }
+
+  // 検索フィルター
   cards.forEach(card => {
     const text = (card.dataset.keywords || '') + ' ' + card.textContent;
     const match = !q || q.split(/\s+/).every(word => text.toLowerCase().includes(word));
