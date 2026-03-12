@@ -8,99 +8,126 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif; background: #f0f2f7; color: #1e293b; }
 
-  header { background: #1a3a5c; color: #fff; padding: 28px 24px 22px; border-bottom: 3px solid #0ea5e9; }
+  header {
+    background: linear-gradient(160deg, #152f4e 0%, #1a3a5c 55%, #1e4472 100%);
+    color: #fff; padding: 28px 24px 22px;
+    border-bottom: 2px solid rgba(14,165,233,0.6);
+  }
   .header-inner { max-width: 960px; margin: 0 auto; }
-  header h1 { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.01em; }
-  .header-meta { display: flex; align-items: center; gap: 12px; margin-top: 8px; flex-wrap: wrap; }
-  .header-sub { font-size: 0.82rem; opacity: 0.7; }
-  .tool-count { font-size: 0.72rem; background: rgba(255,255,255,0.15); padding: 3px 9px; border-radius: 10px; font-weight: 600; }
+  header h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; }
+  .header-meta { display: flex; align-items: center; gap: 12px; margin-top: 7px; flex-wrap: wrap; }
+  .header-sub { font-size: 0.8rem; color: rgba(255,255,255,0.6); }
+  .tool-count {
+    font-size: 0.7rem; background: rgba(14,165,233,0.2);
+    border: 1px solid rgba(14,165,233,0.35);
+    padding: 2px 8px; border-radius: 4px; font-weight: 600; color: #7dd3fc;
+  }
 
-  .container { max-width: 960px; margin: 24px auto; padding: 0 16px 60px; }
+  .container { max-width: 960px; margin: 22px auto; padding: 0 16px 60px; }
 
   /* 検索バー */
   .search-wrap { margin-bottom: 14px; position: relative; }
   .search-wrap input {
-    width: 100%; padding: 11px 44px 11px 16px;
+    width: 100%; padding: 11px 60px 11px 16px;
     border: 1.5px solid #cbd5e1; border-radius: 8px;
     font-size: 0.93rem; font-family: inherit; background: #fff;
     transition: border-color 0.2s, box-shadow 0.2s;
   }
   .search-wrap input:focus { outline: none; border-color: #1a3a5c; box-shadow: 0 0 0 3px rgba(26,58,92,0.1); }
-  .search-wrap .search-icon { position: absolute; right: 13px; top: 50%; transform: translateY(-50%); font-size: 1rem; color: #94a3b8; pointer-events: none; }
+  .search-wrap .search-icon { position: absolute; right: 13px; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; display: flex; align-items: center; gap: 6px; }
+  .search-shortcut {
+    font-size: 0.65rem; color: #cbd5e1; border: 1px solid #e2e8f0;
+    background: #f8fafc; padding: 1px 5px; border-radius: 3px;
+    font-family: monospace; line-height: 1.5;
+  }
   .search-count { font-size: 0.75rem; color: #94a3b8; margin-top: 5px; }
 
   /* お気に入り・最近使ったツール */
-  #favSection, #recentSection { margin-bottom: 6px; }
-  .recent-grid { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 8px; }
+  #favSection, #recentSection { margin-bottom: 8px; }
+  .recent-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
   .recent-chip {
-    display: inline-flex; align-items: center; gap: 5px;
-    background: #fff; border: 1px solid #e2e8f0; border-radius: 6px;
-    padding: 5px 11px; font-size: 0.78rem; color: #475569;
+    display: inline-flex; align-items: center;
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 5px;
+    padding: 4px 10px; font-size: 0.76rem; color: #475569;
     text-decoration: none; font-weight: 500;
     transition: border-color 0.15s, color 0.15s;
   }
   .recent-chip:hover { border-color: #1a3a5c; color: #1a3a5c; }
-  .recent-chip .chip-icon { font-size: 0.85rem; }
 
   /* カードのお気に入りボタン */
-  .card { position: relative; }
   .fav-btn {
-    position: absolute; top: 10px; right: 11px;
+    position: absolute; top: 10px; right: 10px;
     background: none; border: none; cursor: pointer;
-    font-size: 0.9rem; line-height: 1; padding: 2px 3px;
-    color: #cbd5e1; transition: color 0.15s;
+    font-size: 0.82rem; line-height: 1; padding: 3px;
+    color: #e2e8f0; transition: color 0.15s;
     z-index: 1;
   }
   .fav-btn:hover { color: #f59e0b; }
   .fav-btn.on { color: #f59e0b; }
   .fav-chip {
-    display: inline-flex; align-items: center; gap: 5px;
-    background: #fff; border: 1px solid #fcd34d; border-radius: 6px;
-    padding: 5px 11px; font-size: 0.78rem; color: #92400e;
+    display: inline-flex; align-items: center;
+    background: #fff; border: 1px solid #fcd34d; border-radius: 5px;
+    padding: 4px 10px; font-size: 0.76rem; color: #92400e;
     text-decoration: none; font-weight: 500;
     transition: background 0.15s;
   }
   .fav-chip:hover { background: #fef9eb; }
 
-  /* セクションタイトル — uppercase廃止、左ボーダーに変更 */
+  /* セクションタイトル */
   .section-title {
-    font-size: 0.88rem; font-weight: 700; color: #1e293b;
-    margin: 36px 0 14px;
-    padding-left: 11px;
-    border-left: 3px solid #1a3a5c;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 0.86rem; font-weight: 700; color: #1e293b;
+    margin: 36px 0 12px;
+    padding-left: 10px;
+    border-left: 3px solid var(--cat, #1a3a5c);
+  }
+  .section-count {
+    font-size: 0.68rem; font-weight: 600; color: #94a3b8;
+    background: #f1f5f9; border-radius: 3px; padding: 1px 5px;
   }
 
   /* カードグリッド */
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 11px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px; }
   .card {
-    background: #fff; border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.07);
-    padding: 16px 18px;
+    --cat: #e2e8f0;
+    background: #fff; border-radius: 9px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04);
+    padding: 16px 18px 14px;
     text-decoration: none; color: #1e293b;
-    transition: box-shadow 0.18s, border-left-color 0.18s;
+    transition: box-shadow 0.2s, transform 0.2s;
     display: flex; flex-direction: column;
-    border-left: 3px solid #e2e8f0; /* JSでカテゴリ色に差し替え */
+    border-top: 2.5px solid var(--cat);
+    position: relative; overflow: hidden;
   }
-  .card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.11); }
+  .card:hover {
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+  }
+  /* ホバーで右下に → が現れる */
+  .card::after {
+    content: '→';
+    position: absolute; bottom: 12px; right: 13px;
+    font-size: 0.8rem; color: #e2e8f0;
+    transition: color 0.2s, transform 0.2s;
+  }
+  .card:hover::after { color: var(--cat); transform: translateX(3px); }
   .card.hidden { display: none; }
-  .card .icon { font-size: 1.1rem; margin-bottom: 7px; display: inline-block; }
-  .card h2 { font-size: 0.93rem; color: #1e293b; margin-bottom: 5px; font-weight: 700; line-height: 1.4; }
-  .card p { font-size: 0.77rem; color: #64748b; line-height: 1.65; flex: 1; }
-  /* tagはバッジではなく補足テキスト */
-  .card .tag { font-size: 0.7rem; color: #94a3b8; margin-top: 10px; font-weight: 500; background: none; padding: 0; }
+  .card h2 { font-size: 0.91rem; color: #0f172a; margin-bottom: 6px; font-weight: 700; line-height: 1.4; padding-right: 16px; }
+  .card p { font-size: 0.76rem; color: #64748b; line-height: 1.65; flex: 1; padding-right: 20px; }
+  .card .tag { font-size: 0.68rem; color: #94a3b8; margin-top: 12px; font-weight: 500; }
   .no-result { display: none; text-align: center; padding: 40px; color: #94a3b8; font-size: 0.9rem; }
 
-  /* カテゴリタブ — emoji削除、シンプルに */
+  /* カテゴリタブ */
   .cat-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
   .cat-tab {
-    padding: 5px 13px; border-radius: 6px; border: 1px solid #e2e8f0;
-    background: #fff; color: #64748b; font-size: 0.8rem; cursor: pointer;
+    padding: 5px 12px; border-radius: 5px; border: 1px solid #e2e8f0;
+    background: #fff; color: #64748b; font-size: 0.78rem; cursor: pointer;
     font-family: inherit; font-weight: 600; transition: all 0.12s;
   }
-  .cat-tab:hover { border-color: #94a3b8; color: #1e293b; }
+  .cat-tab:hover { border-color: #94a3b8; color: #1e293b; background: #f8fafc; }
   .cat-tab.active { background: #1a3a5c; color: #fff; border-color: #1a3a5c; }
 
-  footer { text-align: center; color: #94a3b8; font-size: 0.73rem; padding: 20px 16px; border-top: 1px solid #e2e8f0; margin-top: 20px; }
+  footer { text-align: center; color: #94a3b8; font-size: 0.72rem; padding: 20px 16px; border-top: 1px solid #e2e8f0; margin-top: 20px; }
 </style>
 </head>
 <body>
@@ -118,7 +145,10 @@
   <!-- 検索バー -->
   <div class="search-wrap">
     <input type="text" id="searchInput" placeholder="ツールを検索（例：法人税、年末調整、借入…）" oninput="filterCards()">
-    <span class="search-icon"><svg width="15" height="15" viewBox="0 0 15 15" fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="10" y1="10" x2="13.5" y2="13.5"/></svg></span>
+    <span class="search-icon">
+      <svg width="14" height="14" viewBox="0 0 15 15" fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-linecap="round"><circle cx="6.5" cy="6.5" r="4.5"/><line x1="10" y1="10" x2="13.5" y2="13.5"/></svg>
+      <span class="search-shortcut" id="searchShortcut">/</span>
+    </span>
   </div>
   <div class="search-count" id="searchCount"></div>
 
@@ -226,14 +256,43 @@ const CAT_COLORS = {
 
 function addCategoryColors() {
   document.querySelectorAll('#allTools .section-title').forEach(title => {
-    const color = CAT_COLORS[title.textContent.trim()];
+    const catName = title.dataset.cat || title.childNodes[0]?.textContent?.trim();
+    const color = CAT_COLORS[catName];
     if (!color) return;
+    // CSS変数でカラーを管理（ホバー矢印などにも使える）
+    title.style.setProperty('--cat', color);
     const grid = title.nextElementSibling;
-    if (grid) grid.querySelectorAll('.card').forEach(c => { c.style.borderLeftColor = color; });
-    // セクションタイトルの左ボーダー色もカテゴリ色に
-    title.style.borderLeftColor = color;
+    if (!grid) return;
+    const cards = grid.querySelectorAll('.card');
+    cards.forEach(c => c.style.setProperty('--cat', color));
+    // ツール数バッジを追加（初回のみ）
+    if (!title.querySelector('.section-count')) {
+      const badge = document.createElement('span');
+      badge.className = 'section-count';
+      badge.textContent = cards.length + 'ツール';
+      title.appendChild(badge);
+      title.dataset.cat = catName;
+    }
   });
 }
+
+// / キーで検索フォーカス
+document.addEventListener('keydown', (e) => {
+  if (e.key === '/' && document.activeElement !== document.getElementById('searchInput')) {
+    e.preventDefault();
+    document.getElementById('searchInput').focus();
+    document.getElementById('searchInput').select();
+  }
+});
+// フォーカス中はショートカットヒントを隠す
+document.getElementById('searchInput')?.addEventListener('focus', () => {
+  const s = document.getElementById('searchShortcut');
+  if (s) s.style.opacity = '0';
+});
+document.getElementById('searchInput')?.addEventListener('blur', () => {
+  const s = document.getElementById('searchShortcut');
+  if (s) s.style.opacity = '';
+});
 
 // ===== 現在のカテゴリフィルター状態 =====
 let _activeCat = null;

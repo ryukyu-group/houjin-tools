@@ -197,7 +197,8 @@
       /* card h2: heavy blue underline → subtle separator */
       .card h2 {
         border-bottom: 1px solid #e8ecf0 !important;
-        color: #1e293b !important;
+        color: #0f172a !important;
+        font-size: 1rem !important;
       }
       /* section heading uppercase 廃止 */
       .card h2, .subhead {
@@ -209,15 +210,32 @@
         .btn-calc {
           width: auto !important;
           min-width: 200px !important;
-          padding-left: 36px !important;
-          padding-right: 36px !important;
+          padding-left: 40px !important;
+          padding-right: 40px !important;
           display: block !important;
           margin-left: auto !important;
           margin-right: auto !important;
+          border-radius: 8px !important;
+          font-size: 0.95rem !important;
+          letter-spacing: 0.01em !important;
         }
       }
-      /* card hover: translateY削除（ツールページのcardは非リンクなので影響少ないが念のため） */
-      .card { transition: box-shadow 0.18s !important; }
+      /* フォーム入力のフォーカスリング（洗練された印象） */
+      input[type=number]:focus,
+      input[type=text]:focus,
+      input[type=email]:focus,
+      select:focus,
+      textarea:focus {
+        outline: none !important;
+        border-color: #1a3a5c !important;
+        box-shadow: 0 0 0 3px rgba(26,58,92,0.12) !important;
+      }
+      /* ラベルの色を少し落ち着かせる */
+      .input-group label { color: #475569 !important; }
+      /* info-box / warn-box に少し丸みを */
+      .info-box, .warn-box { border-radius: 0 8px 8px 0 !important; }
+      /* card hover */
+      .card { transition: box-shadow 0.2s !important; }
     `;
     document.head.appendChild(s);
   }
