@@ -184,7 +184,46 @@
   }
 
   /* ---------------------------------------------------------------
-   * 7. 印刷スタイル
+   * 7. AIくさいデザインパターンの上書き（全ツールページ共通）
+   * ・card h2 の重い青いborder-bottom → 軽い区切り線
+   * ・btn-calc の full-width → デスクトップでは auto width（中央配置）
+   * ・サブヘッドのUPPERCASE対策（念のため）
+   * ------------------------------------------------------------ */
+  function injectDesignOverrides() {
+    if (document.getElementById('ht-design-override') || currentPage === 'index.html') return;
+    const s = document.createElement('style');
+    s.id = 'ht-design-override';
+    s.textContent = `
+      /* card h2: heavy blue underline → subtle separator */
+      .card h2 {
+        border-bottom: 1px solid #e8ecf0 !important;
+        color: #1e293b !important;
+      }
+      /* section heading uppercase 廃止 */
+      .card h2, .subhead {
+        text-transform: none !important;
+        letter-spacing: normal !important;
+      }
+      /* btn-calc: full-width → centered auto-width on desktop */
+      @media (min-width: 520px) {
+        .btn-calc {
+          width: auto !important;
+          min-width: 200px !important;
+          padding-left: 36px !important;
+          padding-right: 36px !important;
+          display: block !important;
+          margin-left: auto !important;
+          margin-right: auto !important;
+        }
+      }
+      /* card hover: translateY削除（ツールページのcardは非リンクなので影響少ないが念のため） */
+      .card { transition: box-shadow 0.18s !important; }
+    `;
+    document.head.appendChild(s);
+  }
+
+  /* ---------------------------------------------------------------
+   * 8. 印刷スタイル
    * ------------------------------------------------------------ */
   function injectPrintStyles() {
     if (document.getElementById('ht-print-style')) return;
@@ -420,6 +459,7 @@
     const restored = loadInputs();
     addCsvButtons();
     addFab();
+    injectDesignOverrides();
     injectPrintStyles();
     injectDarkMode();
     addManDisplay();
