@@ -200,7 +200,7 @@ function kyuyoKojo(kyuyo, nenbun) {
   } else {
     // 令和2年〜令和6年分
     if (kyuyo <= 1625000) return 550000;
-    if (kyuyo <= 1800000) return Math.floor(kyuyo * 0.4) - 100000;
+    if (kyuyo <= 1800000) return Math.max(550000, Math.floor(kyuyo * 0.4) - 100000);
     if (kyuyo <= 3600000) return Math.floor(kyuyo * 0.3) + 80000;
     if (kyuyo <= 6600000) return Math.floor(kyuyo * 0.2) + 440000;
     if (kyuyo <= 8500000) return Math.floor(kyuyo * 0.1) + 1100000;

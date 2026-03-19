@@ -192,10 +192,9 @@ function calcCorporateTax(profit, shihonkin, pref) {
   return { total, houjinzei, chihouHoujinzei, jigyozei, tokubetuJigyozei, juminzei };
 }
 
-// ── 給与所得控除（2024年） ─────────────────────────────────
+// ── 給与所得控除（令和7年以降） ──────────────────────────────
 function kyuyoKojo(income) {
-  if (income <= 1625000) return 550000;
-  if (income <= 1800000) return Math.max(income * 0.4 - 100000, 550000);
+  if (income <= 1900000) return 650000;
   if (income <= 3600000) return income * 0.3 + 80000;
   if (income <= 6600000) return income * 0.2 + 440000;
   if (income <= 8500000) return income * 0.1 + 1100000;
@@ -236,8 +235,8 @@ function calcPersonalTax(yakuinHoshu, hasIns) {
   const kyuyoShotoku = Math.max(0, yakuinHoshu - kyuyoKojo(yakuinHoshu));
   const socialIns    = calcSocialIns(yakuinHoshu, hasIns);
 
-  // 所得税：基礎控除 480,000円、社会保険料控除
-  const kaseiShotoku  = Math.max(0, kyuyoShotoku - socialIns - 480000);
+  // 所得税：基礎控除 580,000円（令和7年以降）、社会保険料控除
+  const kaseiShotoku  = Math.max(0, kyuyoShotoku - socialIns - 580000);
   const shotokuzei    = calcShotokuzei(kaseiShotoku);
   const fukko         = shotokuzei * 0.021; // 復興特別所得税
 
