@@ -179,10 +179,9 @@ function switchTab(name) {
 
 function fmt(n) { return Math.round(n).toLocaleString('ja-JP') + '円'; }
 
-// ── 給与所得控除 ────────────────────────────────────────────
+// ── 給与所得控除（令和7年以降） ──────────────────────────────
 function kyuyoKojo(income) {
-  if (income <= 1625000) return 550000;
-  if (income <= 1800000) return Math.max(income * 0.4 - 100000, 550000);
+  if (income <= 1900000) return 650000;
   if (income <= 3600000) return income * 0.3 + 80000;
   if (income <= 6600000) return income * 0.2 + 440000;
   if (income <= 8500000) return income * 0.1 + 1100000;
@@ -210,8 +209,8 @@ function calcKyuyo() {
   // 給与所得 = 年収 - 給与所得控除
   const nenShotoku  = Math.max(0, nenKyuyo - kyuyoKojo(nenKyuyo));
 
-  // 課税所得 = 給与所得 - 基礎控除(48万) - 扶養控除(38万/人)
-  const kaseiShotoku = Math.max(0, nenShotoku - 480000 - fuyou * 380000);
+  // 課税所得 = 給与所得 - 基礎控除(58万・令和7年以降) - 扶養控除(38万/人)
+  const kaseiShotoku = Math.max(0, nenShotoku - 580000 - fuyou * 380000);
 
   // 年税額（復興特別所得税含む）
   const nenZei = calcShotokuzei(kaseiShotoku) * 1.021;
@@ -232,7 +231,7 @@ function calcKyuyo() {
     <tr><td>年収換算（×12）</td><td>${fmt(nenKyuyo)}</td></tr>
     <tr><td>給与所得控除</td><td>▲${fmt(kyuyoKojo(nenKyuyo))}</td></tr>
     <tr><td>給与所得（年）</td><td>${fmt(nenShotoku)}</td></tr>
-    <tr><td>基礎控除</td><td>▲${fmt(480000)}</td></tr>
+    <tr><td>基礎控除</td><td>▲${fmt(580000)}</td></tr>
     <tr><td>扶養控除（${fuyou}人 × 38万）</td><td>▲${fmt(fuyou * 380000)}</td></tr>
     <tr><td>課税所得（年）</td><td>${fmt(kaseiShotoku)}</td></tr>
     <tr><td>年税額（復興特別含む）</td><td>${fmt(nenZei)}</td></tr>

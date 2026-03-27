@@ -125,10 +125,9 @@ function getPrefData(p) { return PREF_DATA[p] || PREF_DEFAULT; }
 
 function fmt(n) { return Math.round(n).toLocaleString('ja-JP') + '円'; }
 
-// 給与所得控除
+// 給与所得控除（令和7年以降）
 function kyuyoKojo(income) {
-  if (income <= 1625000) return 550000;
-  if (income <= 1800000) return Math.max(income * 0.4 - 100000, 550000);
+  if (income <= 1900000) return 650000;
   if (income <= 3600000) return income * 0.3 + 80000;
   if (income <= 6600000) return income * 0.2 + 440000;
   if (income <= 8500000) return income * 0.1 + 1100000;
@@ -143,9 +142,9 @@ function calcShotokuzei(taxable) {
   return 0;
 }
 
-// 社会保険料（本人負担）
+// 社会保険料（本人負担・2025年度 協会けんぽ東京）
 function calcSocialIns(annualSalary) {
-  const kenpo  = Math.min(Math.max(annualSalary * 0.0582, 40500), 970776);
+  const kenpo  = Math.min(Math.max(annualSalary * 0.0575, 40500), 958200);
   const nenkin = Math.min(Math.max(annualSalary * 0.0915, 96624), 713700);
   return kenpo + nenkin;
 }
@@ -200,11 +199,11 @@ function calculate() {
   // 国民健康保険
   const kokuho = calcKokuho(kojinShotoku);
 
-  // 国民年金（固定 年20,520円×12ヶ月 ≒ 201,600円）
-  const nenkinKojin = 201600;
+  // 国民年金（2025年度 月17,510円 × 12 = 210,120円）
+  const nenkinKojin = 210120;
 
   // 所得税
-  const kaseiKojin = Math.max(0, kojinShotoku - kokuho - nenkinKojin - 480000);
+  const kaseiKojin = Math.max(0, kojinShotoku - kokuho - nenkinKojin - 580000);
   const shotokuzeiKojin = calcShotokuzei(kaseiKojin);
   const fukkoKojin = shotokuzeiKojin * 0.021;
 
@@ -212,10 +211,10 @@ function calculate() {
   const kaseiJuminKojin = Math.max(0, kojinShotoku - kokuho - nenkinKojin - 430000);
   const juminzeiKojin = Math.max(0, kaseiJuminKojin * 0.10 - 2500) + 5000;
 
-  // 専従者への給与（配偶者側の税：給与所得控除後、基礎控除480万まで無税想定）
+  // 専従者への給与（配偶者側の税：給与所得控除後、基礎控除58万まで無税想定）
   // 配偶者給与：給与所得 = 給与 - 給与所得控除
   const haiguhaGK = Math.max(0, haigusha - kyuyoKojo(haigusha));
-  const haiguhaTax = calcShotokuzei(Math.max(0, haiguhaGK - 480000)) * 1.021
+  const haiguhaTax = calcShotokuzei(Math.max(0, haiguhaGK - 580000)) * 1.021
                    + Math.max(0, (haiguhaGK - 430000) * 0.10 - 2500) + 5000;
 
   const kojinTotal = shotokuzeiKojin + fukkoKojin + juminzeiKojin + kokuho + nenkinKojin + jigyozeiKojin + haiguhaTax;
@@ -229,7 +228,7 @@ function calculate() {
   // 代表者個人（役員報酬）
   const kyuyoShotoku = Math.max(0, yakuinHoshu - kyuyoKojo(yakuinHoshu));
   const socialInsRep = calcSocialIns(yakuinHoshu);
-  const kaseiRep = Math.max(0, kyuyoShotoku - socialInsRep - 480000);
+  const kaseiRep = Math.max(0, kyuyoShotoku - socialInsRep - 580000);
   const shotokuzeiRep = calcShotokuzei(kaseiRep);
   const fukkoRep = shotokuzeiRep * 0.021;
   const kaseiJuminRep = Math.max(0, kyuyoShotoku - socialInsRep - 430000);
@@ -238,7 +237,7 @@ function calculate() {
   // 配偶者（法人役員報酬扱い）
   const haiguhaGK2 = Math.max(0, haigusha - kyuyoKojo(haigusha));
   const socialInsHaigusha = calcSocialIns(haigusha);
-  const kaseiHaigusha = Math.max(0, haiguhaGK2 - socialInsHaigusha - 480000);
+  const kaseiHaigusha = Math.max(0, haiguhaGK2 - socialInsHaigusha - 580000);
   const haigusha2Tax = calcShotokuzei(kaseiHaigusha) * 1.021
                      + Math.max(0, (Math.max(0, haiguhaGK2 - socialInsHaigusha - 430000)) * 0.10 - 2500) + 5000
                      + socialInsHaigusha;
@@ -305,8 +304,8 @@ function calculate() {
     </tbody>`;
 
   document.getElementById('resultNote').innerHTML =
-    '※ 個人：青色申告特別控除65万円、国保（東京都2024年度概算）、国民年金月16,980円を適用。<br>' +
-    '※ 法人：社会保険は協会けんぽ（東京）2024年度40歳以上。健保5.82%＋年金9.15%（本人・雇用主各）。<br>' +
+    '※ 個人：青色申告特別控除65万円、基礎控除58万円（令和7年以降）、国保（東京都概算）、国民年金月17,510円（2025年度）を適用。<br>' +
+    '※ 法人：社会保険は協会けんぽ（東京）2025年度40歳以上。健保5.75%＋年金9.15%（本人・雇用主各）。<br>' +
     '※ 法人設立費用（登記費用等）は含みません。消費税・相続税は考慮していません。<br>' +
     '※ 実際の判断は税理士・社労士にご相談ください。';
 

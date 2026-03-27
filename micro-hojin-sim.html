@@ -117,8 +117,8 @@
     <h3 style="font-size:0.9rem;color:#1a3a5c;margin-bottom:10px;font-weight:700">詳細内訳</h3>
     <div style="overflow-x:auto"><table class="dt" id="detailTable"></table></div>
     <p class="note">
-      ※ 国民健康保険料は東京都2024年度基準（医療分8.89%＋支援金2.90%＋介護2.51%）の概算。<br>
-      ※ 社会保険（マイクロ法人）：協会けんぽ東京 2024年度。本人＋雇用主 健保11.58%・年金18.3%（40歳以上）。<br>
+      ※ 国民健康保険料は東京都概算（医療分8.89%＋支援金2.90%＋介護2.51%）。基礎控除58万円（令和7年以降）。<br>
+      ※ 社会保険（マイクロ法人）：協会けんぽ東京 2025年度。本人＋雇用主 健保11.50%・年金18.3%（40歳以上）。国民年金17,510円/月。<br>
       ※ マイクロ法人は法人税・住民税均等割（7万円）も発生します。<br>
       ※ 実際の節税効果は税理士・社労士にご確認ください。
     </p>
@@ -130,8 +130,7 @@
 function fmt(n){return Math.round(n).toLocaleString('ja-JP')+'円';}
 
 function kyuyoKojo(income) {
-  if(income<=1625000)return 550000;
-  if(income<=1800000)return Math.max(income*0.4-100000,550000);
+  if(income<=1900000)return 650000;
   if(income<=3600000)return income*0.3+80000;
   if(income<=6600000)return income*0.2+440000;
   if(income<=8500000)return income*0.1+1100000;
@@ -150,7 +149,7 @@ function calcKokuho(shotoku) {
 // 社会保険（本人+雇用主）
 function calcShakai(monthSalary) {
   const annualSalary = monthSalary * 12;
-  const kenpoRateFull = 0.1158; // 健保+介護（40歳以上、本人+雇用主合計）
+  const kenpoRateFull = 0.1150; // 健保+介護（40歳以上、本人+雇用主合計・2025年度東京）
   const nenkinRateFull = 0.183;
   const kenpoMin = 58000 * kenpoRateFull, kenpoMax = 1390000 * kenpoRateFull;
   const nenkinMin = 88000 * nenkinRateFull, nenkinMax = 650000 * nenkinRateFull * 12;
@@ -183,9 +182,9 @@ function calculate() {
   // ── 現状：個人事業のみ ─────────────────────────────────
   const jigyoShotoku = Math.max(0, kojinShotoku - aokiro);
   const kokuho_now   = calcKokuho(jigyoShotoku);
-  const nenkin_now   = 16980 * 12; // 国民年金
+  const nenkin_now   = 17510 * 12; // 国民年金（2025年度）
   const jigyozei_now = Math.max(0, (kojinShotoku - 2900000) * 0.05);
-  const kasei_now    = Math.max(0, jigyoShotoku - kokuho_now - nenkin_now - 480000);
+  const kasei_now    = Math.max(0, jigyoShotoku - kokuho_now - nenkin_now - 580000);
   const stax_now     = calcShotokuzei(kasei_now) * 1.021;
   const kaseiJ_now   = Math.max(0, jigyoShotoku - kokuho_now - nenkin_now - 430000);
   const juminzei_now = Math.max(0, kaseiJ_now*0.10-2500)+5000;
@@ -206,7 +205,7 @@ function calculate() {
   const kyuyoShotoku    = Math.max(0, microAnnual - kyuyoKojo(microAnnual));
   // 個人の合計所得 = 事業所得 + 給与所得
   const totalShotoku    = jigyoShotoku2 + kyuyoShotoku;
-  const kasei2          = Math.max(0, totalShotoku - shaho_kojin - 480000);
+  const kasei2          = Math.max(0, totalShotoku - shaho_kojin - 580000);
   const stax2           = calcShotokuzei(kasei2) * 1.021;
   const kaseiJ2         = Math.max(0, totalShotoku - shaho_kojin - 430000);
   const juminzei2       = Math.max(0, kaseiJ2*0.10-2500)+5000;

@@ -113,8 +113,8 @@
     <div style="overflow-x:auto"><table class="dt" id="detailTable"></table></div>
     <div class="warn-box" style="margin-top:16px" id="adviceBox"></div>
     <p class="note">
-      ※ 国民健康保険料は東京都2024年度基準（医療分8.89%・後期高齢者支援金2.90%・介護分2.51%・均等割含む）。市区町村により異なります。<br>
-      ※ 協会けんぽ（東京）2024年度：健保9.98%（40歳未満）/ 11.58%（40歳以上、介護1.60%含む）。<br>
+      ※ 国民健康保険料は東京都概算（医療分8.89%・後期高齢者支援金2.90%・介護分2.51%・均等割含む）。市区町村により異なります。<br>
+      ※ 協会けんぽ（東京）2025年度：健保9.91%（40歳未満）/ 11.50%（40歳以上、介護1.59%含む）。<br>
       ※ 任意継続の標準報酬月額上限は30万円（協会けんぽ）。実際は退職時の標準報酬月額と上限の低い方を適用。<br>
       ※ 実際の保険料は加入する健保組合・市区町村にご確認ください。
     </p>
@@ -141,10 +141,10 @@
 <script>
 function fmt(n) { return Math.round(n).toLocaleString('ja-JP') + '円'; }
 
-// 協会けんぽ保険料率（2024年度）
+// 協会けんぽ保険料率（2025年度）
 const KEMPO_RATES = {
-  kyokai_tokyo:  { young: 0.0998, kaigo: 0.1158 }, // 健保 (40歳未満 / 40歳以上)
-  kyokai_osaka:  { young: 0.1022, kaigo: 0.1182 },
+  kyokai_tokyo:  { young: 0.0991, kaigo: 0.1150 }, // 健保 (40歳未満 / 40歳以上)
+  kyokai_osaka:  { young: 0.1024, kaigo: 0.1183 },
   other:         { young: 0.10,   kaigo: 0.116  }, // 概算
 };
 
