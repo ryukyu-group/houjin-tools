@@ -207,24 +207,30 @@ function calculate() {
   // ── 2割特例 ───────────────────────────────────────────────
   const niWariZei = uriageZeiTotal * 0.20;
 
-  // 差額
-  const diff = honsokuZei - kaniZei;
-  const winner = diff > 0 ? '簡易課税' : diff < 0 ? '本則課税' : '同額';
+  // 3方式の最安値を判定
+  const candidates = [
+    { name: '本則課税', zei: honsokuZei },
+    { name: '簡易課税', zei: kaniZei },
+  ];
+  if (invoiced) candidates.push({ name: '2割特例', zei: niWariZei });
 
-  // 結果表示
+  const minZei = Math.min(...candidates.map(c => c.zei));
+  const winners = candidates.filter(c => c.zei === minZei).map(c => c.name);
+
+  // diffBox
   const diffBox = document.getElementById('diffBox');
-  if (diff === 0) {
-    diffBox.innerHTML = '<p>本則課税と簡易課税の納税額は<strong>同額</strong>です</p>';
+  if (winners.length > 1) {
+    diffBox.innerHTML = `<p>本則課税と${winners.join('・')}の納税額は<strong>同額</strong>です</p>`;
   } else {
-    const winStr  = diff > 0 ? '簡易課税' : '本則課税';
-    const loseStr = diff > 0 ? '本則課税' : '簡易課税';
-    const saveAmt = Math.abs(diff);
-    diffBox.innerHTML = `<p><strong>${winStr}</strong>の方が <strong>${fmt(saveAmt)}</strong> 節税になります（${loseStr}との比較）</p>`;
+    const secondMin = candidates.filter(c => !winners.includes(c.name)).map(c => c.zei);
+    const saveAmt = Math.min(...secondMin) - minZei;
+    diffBox.innerHTML = `<p><strong>${winners[0]}</strong>が最も有利です（次点より <strong>${fmt(saveAmt)}</strong> 節税）</p>`;
   }
 
+  const isWinner = name => winners.includes(name);
   document.getElementById('resultGrid').innerHTML = `
-    <div class="result-box honsoku${winner === '本則課税' ? ' winner' : ''}">
-      <h3 class="honsoku">本則課税${winner === '本則課税' ? '<span class="badge-win">有利</span>' : ''}</h3>
+    <div class="result-box honsoku${isWinner('本則課税') ? ' winner' : ''}">
+      <h3 class="honsoku">本則課税${isWinner('本則課税') ? '<span class="badge-win">有利</span>' : ''}</h3>
       <div class="result-amount honsoku">${fmt(honsokuZei)}</div>
       <div class="result-detail">
         売上消費税：${fmt(uriageZeiTotal)}<br>
@@ -232,26 +238,35 @@ function calculate() {
         課税売上割合：${Math.round(wari*100)}%
       </div>
     </div>
-    <div class="result-box kannikouzei${winner === '簡易課税' ? ' winner' : ''}">
-      <h3 class="kannikouzei">簡易課税${winner === '簡易課税' ? '<span class="badge-win">有利</span>' : ''}${invoiced ? '<br><span style="font-size:0.75rem;font-weight:400">※ 2割特例：' + fmt(niWariZei) + '</span>' : ''}</h3>
+    <div class="result-box kannikouzei${isWinner('簡易課税') ? ' winner' : ''}">
+      <h3 class="kannikouzei">簡易課税${isWinner('簡易課税') ? '<span class="badge-win">有利</span>' : ''}</h3>
       <div class="result-amount kannikouzei">${fmt(kaniZei)}</div>
       <div class="result-detail">
         売上消費税：${fmt(uriageZeiTotal)}<br>
-        みなし控除（${Math.round(kubun*100)}%）：▲${fmt(uriageZeiTotal * kubun)}<br>
-        ${invoiced ? '2割特例適用時：' + fmt(niWariZei) : ''}
+        みなし控除（${Math.round(kubun*100)}%）：▲${fmt(uriageZeiTotal * kubun)}
       </div>
-    </div>`;
+    </div>
+    ${invoiced ? `
+    <div class="result-box${isWinner('2割特例') ? ' winner' : ''}" style="border-color:#e67e22">
+      <h3 style="color:#e67e22">2割特例${isWinner('2割特例') ? '<span class="badge-win">有利</span>' : ''}</h3>
+      <div class="result-amount" style="color:#e67e22">${fmt(niWariZei)}</div>
+      <div class="result-detail">
+        売上消費税：${fmt(uriageZeiTotal)}<br>
+        みなし控除（80%）：▲${fmt(uriageZeiTotal * 0.80)}<br>
+        <span style="font-size:0.75rem">2023年10月〜2026年9月の課税期間が対象</span>
+      </div>
+    </div>` : ''}`;
 
+  const niWariCol = invoiced
+    ? `<td><strong>${fmt(niWariZei)}</strong></td>`
+    : '<td style="color:#aaa">適用外</td>';
   document.getElementById('detailTable').innerHTML = `
-    <tr><th>項目</th><th>本則課税</th><th>簡易課税</th></tr>
-    <tr><td>標準税率（10%）売上消費税</td><td>${fmt(uriageZei10)}</td><td>${fmt(uriageZei10)}</td></tr>
-    <tr><td>軽減税率（8%）売上消費税</td><td>${fmt(uriageZei8)}</td><td>${fmt(uriageZei8)}</td></tr>
-    <tr><td>売上消費税 合計</td><td><strong>${fmt(uriageZeiTotal)}</strong></td><td><strong>${fmt(uriageZeiTotal)}</strong></td></tr>
-    <tr><td>標準税率 仕入税額</td><td>▲${fmt(shiireZei10 * wari)}</td><td rowspan="3" style="vertical-align:middle;text-align:center">みなし仕入率<br>（${Math.round(kubun*100)}%）<br>▲${fmt(uriageZeiTotal * kubun)}</td></tr>
-    <tr><td>軽減税率 仕入税額</td><td>▲${fmt(shiireZei8 * wari)}</td></tr>
-    <tr><td>課税売上割合按分</td><td>×${Math.round(wari*100)}%</td></tr>
-    <tr><td><strong>納税額</strong></td><td><strong>${fmt(honsokuZei)}</strong></td><td><strong>${fmt(kaniZei)}</strong></td></tr>
-    ${invoiced ? `<tr><td>2割特例（参考）</td><td>―</td><td>${fmt(niWariZei)}</td></tr>` : ''}
+    <tr><th>項目</th><th>本則課税</th><th>簡易課税</th><th>2割特例</th></tr>
+    <tr><td>売上消費税（10%分）</td><td>${fmt(uriageZei10)}</td><td>${fmt(uriageZei10)}</td><td>${fmt(uriageZei10)}</td></tr>
+    <tr><td>売上消費税（8%分）</td><td>${fmt(uriageZei8)}</td><td>${fmt(uriageZei8)}</td><td>${fmt(uriageZei8)}</td></tr>
+    <tr><td>売上消費税 合計</td><td><strong>${fmt(uriageZeiTotal)}</strong></td><td><strong>${fmt(uriageZeiTotal)}</strong></td><td><strong>${fmt(uriageZeiTotal)}</strong></td></tr>
+    <tr><td>仕入税額控除・みなし控除</td><td>▲${fmt(shiireZeiTotal)}<br><small>（課税売上割合${Math.round(wari*100)}%按分）</small></td><td>▲${fmt(uriageZeiTotal * kubun)}<br><small>（みなし${Math.round(kubun*100)}%）</small></td><td>▲${fmt(uriageZeiTotal * 0.80)}<br><small>（みなし80%）</small></td></tr>
+    <tr><td><strong>納税額</strong></td><td><strong>${fmt(honsokuZei)}</strong></td><td><strong>${fmt(kaniZei)}</strong></td>${niWariCol}</tr>
   `;
 
   document.getElementById('resultNote').innerHTML =

@@ -81,8 +81,9 @@
         <label>配偶者の有無</label>
         <select id="haigusha">
           <option value="0">なし</option>
-          <option value="1" selected>あり（配偶者控除対象）</option>
-          <option value="2">あり（配偶者特別控除対象）</option>
+          <option value="1" selected>あり（配偶者控除・所得48万以下）</option>
+          <option value="3">あり（老人配偶者控除・70歳以上）</option>
+          <option value="2">あり（配偶者特別控除・所得48万超133万以下）</option>
         </select>
       </div>
     </div>
@@ -239,12 +240,29 @@ function calcShotokuZei(taxableIncome) {
   }
 }
 
-// 配偶者控除・特別控除（本人所得900万以下を前提）
-function haigushaKojo(type, kyuyoShotoku) {
+// 配偶者控除（本人の合計所得金額による4段階）
+function haigushaKojo(type, totalShotoku) {
   if (type === '0') return 0;
-  if (type === '1') return kyuyoShotoku > 9000000 ? 130000 : 380000; // 配偶者控除
-  // 配偶者特別控除（配偶者収入103〜201万円の平均的な控除額として38万円を簡略適用）
-  return 380000;
+  if (type === '1') {
+    // 配偶者控除（配偶者の所得48万円以下）
+    if (totalShotoku <= 9000000)  return 380000;
+    if (totalShotoku <= 9500000)  return 260000;
+    if (totalShotoku <= 10000000) return 130000;
+    return 0;
+  }
+  if (type === '3') {
+    // 老人配偶者控除（配偶者70歳以上・所得48万円以下）
+    if (totalShotoku <= 9000000)  return 480000;
+    if (totalShotoku <= 9500000)  return 320000;
+    if (totalShotoku <= 10000000) return 160000;
+    return 0;
+  }
+  // type === '2': 配偶者特別控除（配偶者の所得48万超133万以下）
+  // 最大額38万（本人所得900万以下・配偶者所得48万超95万以下）を基準に簡略適用
+  if (totalShotoku <= 9000000)  return 380000;
+  if (totalShotoku <= 9500000)  return 260000;
+  if (totalShotoku <= 10000000) return 130000;
+  return 0;
 }
 
 function calculate() {
@@ -276,9 +294,9 @@ function calculate() {
   const fuyoRoujin = (parseInt(document.getElementById('fuyo_roujin').value) || 0) * 480000;
   const fuyoTotal = fuyoIppan + fuyoTokutei + fuyoRoujin;
 
-  // 配偶者控除
+  // 配偶者控除（本人の合計所得金額で判定）
   const haigushaType = document.getElementById('haigusha').value;
-  const haigushaKojoAmt = haigushaKojo(haigushaType, kyuyoShotoku);
+  const haigushaKojoAmt = haigushaKojo(haigushaType, totalShotoku);
 
   // 基礎控除（令和7年以降58万円、令和6年以前48万円）
   const kisoLimit = isR7 ? 580000 : 480000;

@@ -104,12 +104,37 @@
         </select>
       </div>
       <div class="input-group">
-        <label>扶養控除（人数）</label>
+        <label>扶養控除（一般・16〜18歳・23歳以上）</label>
         <select id="fuyou">
           <option value="0" selected>0人</option>
-          <option value="1">1人（一般 38万）</option>
-          <option value="2">2人（一般 76万）</option>
-          <option value="3">3人（一般 114万）</option>
+          <option value="1">1人（38万）</option>
+          <option value="2">2人（76万）</option>
+          <option value="3">3人（114万）</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>特定扶養控除（19〜22歳）</label>
+        <select id="fuyouTokutei">
+          <option value="0" selected>0人</option>
+          <option value="1">1人（63万）</option>
+          <option value="2">2人（126万）</option>
+          <option value="3">3人（189万）</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>老人扶養控除（70歳以上）</label>
+        <select id="fuyouRoujin">
+          <option value="0" selected>0人</option>
+          <option value="1">1人・同居以外（48万）</option>
+          <option value="2">2人・同居以外（96万）</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>同居老親等（70歳以上・同居）</label>
+        <select id="fuyouRoujinDokyo">
+          <option value="0" selected>0人</option>
+          <option value="1">1人（58万）</option>
+          <option value="2">2人（116万）</option>
         </select>
       </div>
       <div class="input-group">
@@ -207,7 +232,10 @@ function calculate() {
   const aokiro      = parseFloat(document.getElementById('aokiro').value)      || 0;
   const senjusha    = parseFloat(document.getElementById('senjusha').value)    || 0;
   const haigusha    = parseFloat(document.getElementById('haigusha').value)    || 0;
-  const fuyou       = parseInt(document.getElementById('fuyou').value)         || 0;
+  const fuyou             = parseInt(document.getElementById('fuyou').value)             || 0;
+  const fuyouTokutei      = parseInt(document.getElementById('fuyouTokutei').value)      || 0;
+  const fuyouRoujin       = parseInt(document.getElementById('fuyouRoujin').value)       || 0;
+  const fuyouRoujinDokyo  = parseInt(document.getElementById('fuyouRoujinDokyo').value)  || 0;
   const seimei      = parseFloat(document.getElementById('seimeiHoken').value) || 0;
   const jishin      = parseFloat(document.getElementById('jishin').value)      || 0;
   const kyosai      = parseFloat(document.getElementById('kyosai').value)      || 0;
@@ -244,14 +272,17 @@ function calculate() {
     - kokumin_nenkin  // 国民年金控除
     - kyosai          // 小規模共済
     - 580000          // 基礎控除（令和7年以降58万円）
-    - haigusha        // 配偶者控除
-    - fuyou * 380000  // 扶養控除（一般）
-    - seimei          // 生命保険
-    - jishin          // 地震保険
-    - iryou           // 医療費控除
-    - furusatoKojo    // 寄附金控除（寄附金-2,000円）
-    - shougai         // 障害者控除
-    - hitorioni       // ひとり親
+    - haigusha                   // 配偶者控除
+    - fuyou * 380000             // 扶養控除（一般）
+    - fuyouTokutei * 630000      // 特定扶養控除（19〜22歳）
+    - fuyouRoujin * 480000       // 老人扶養控除
+    - fuyouRoujinDokyo * 580000  // 同居老親等
+    - seimei                     // 生命保険
+    - jishin                     // 地震保険
+    - iryou                      // 医療費控除
+    - furusatoKojo               // 寄附金控除（寄附金-2,000円）
+    - shougai                    // 障害者控除
+    - hitorioni                  // ひとり親
     ) / 1000) * 1000
   );
 
@@ -263,7 +294,11 @@ function calculate() {
   // 住民税（課税所得は基礎控除43万）
   const kaseiJumin = Math.max(0,
     jigyoShotoku - kokuho - kokumin_nenkin - kyosai - 430000
-    - haigusha - fuyou * 330000 - seimei - jishin - iryou - furusatoKojo - shougai - hitorioni
+    - haigusha - fuyou * 330000              // 住民税の一般扶養：33万
+    - fuyouTokutei * 450000                  // 住民税の特定扶養：45万
+    - fuyouRoujin * 380000                   // 住民税の老人扶養：38万
+    - fuyouRoujinDokyo * 450000              // 住民税の同居老親：45万
+    - seimei - jishin - iryou - furusatoKojo - shougai - hitorioni
   );
   const juminzei = Math.max(0, kaseiJumin * 0.10 - 2500) + 5000;
 
@@ -293,7 +328,10 @@ function calculate() {
       <tr><td>小規模企業共済等掛金</td><td>▲${fmt(kyosai)}</td></tr>
       <tr><td>基礎控除</td><td>▲${fmt(580000)}</td></tr>
       <tr><td>配偶者控除</td><td>▲${fmt(haigusha)}</td></tr>
-      <tr><td>扶養控除（${fuyou}人）</td><td>▲${fmt(fuyou * 380000)}</td></tr>
+      <tr><td>扶養控除 一般（${fuyou}人）</td><td>▲${fmt(fuyou * 380000)}</td></tr>
+      ${fuyouTokutei > 0 ? `<tr><td>特定扶養控除（${fuyouTokutei}人）</td><td>▲${fmt(fuyouTokutei * 630000)}</td></tr>` : ''}
+      ${fuyouRoujin > 0 ? `<tr><td>老人扶養控除（${fuyouRoujin}人）</td><td>▲${fmt(fuyouRoujin * 480000)}</td></tr>` : ''}
+      ${fuyouRoujinDokyo > 0 ? `<tr><td>同居老親等（${fuyouRoujinDokyo}人）</td><td>▲${fmt(fuyouRoujinDokyo * 580000)}</td></tr>` : ''}
       <tr><td>生命保険料控除</td><td>▲${fmt(seimei)}</td></tr>
       <tr><td>地震保険料控除</td><td>▲${fmt(jishin)}</td></tr>
       <tr><td>医療費控除</td><td>▲${fmt(iryou)}</td></tr>
