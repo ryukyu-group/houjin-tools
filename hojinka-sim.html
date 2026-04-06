@@ -173,7 +173,8 @@ function calcCorpTax(profit, shihonkin, pref) {
     if (income <= 8000000) return 4000000 * r[0] + (income - 4000000) * r[1];
     return 4000000 * r[0] + 4000000 * r[1] + (income - 8000000) * r[2];
   }
-  const useR = (shihonkin === 'senman') ? pd.jigyoSmall : pd.jigyoLarge;
+  // 資本金1億円以下は標準税率（超過税率は1億円超のみ）
+  const useR = pd.jigyoSmall;
   const jigyozei = sw(profit, useR);
   const tokubetuJigyozei = sw(profit, STD) * 0.37;
   const juminRate = (pd.juminThreshold > 0 && houjinzei > pd.juminThreshold) ? pd.juminRateHigh : pd.juminRate;

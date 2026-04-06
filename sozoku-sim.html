@@ -64,8 +64,9 @@
         <input type="number" id="isan" value="80000000" step="1000000" min="0">
       </div>
       <div class="input-group">
-        <label>うち死亡保険金（非課税限度内を除く課税分・円）</label>
+        <label>死亡保険金（受取総額・円）</label>
         <input type="number" id="hoken" value="0" step="1000000" min="0">
+        <span style="font-size:0.75rem;color:#666">非課税限度額（500万×法定相続人数）を自動控除します</span>
       </div>
     </div>
     <div class="info-box">
@@ -177,7 +178,8 @@ function calcSozokuZei(amount){
 }
 
 function calculate(){
-  const isan      = parseFloat(document.getElementById('isan').value)||0;
+  const isanInput = parseFloat(document.getElementById('isan').value)||0;
+  const hoken     = parseFloat(document.getElementById('hoken').value)||0;
   const hasSpouse = document.getElementById('haigusha').value==='1';
   const koNum     = parseInt(document.getElementById('koNum').value)||0;
   const oyaNum    = parseInt(document.getElementById('oyaNum').value)||0;
@@ -187,6 +189,11 @@ function calculate(){
 
   // 法定相続人数（養子は実子がいれば1人、いなければ2人まで）
   let sozokunin = (hasSpouse?1:0) + koNum + (koNum===0?oyaNum:0) + (koNum===0&&oyaNum===0?kyodaiNum:0);
+
+  // 死亡保険金の非課税限度額（500万×法定相続人数）
+  const hokenHikazei = Math.min(hoken, 5000000 * sozokunin);
+  const hokenKazei   = Math.max(0, hoken - hokenHikazei);
+  const isan = isanInput + hokenKazei;
 
   // 基礎控除
   const kiso = 30000000 + 6000000 * sozokunin;
@@ -235,7 +242,7 @@ function calculate(){
   const spouseTax = personTax.find(p=>p.isSpouse);
   let spouseCredit = 0;
   if(spouseTax){
-    const spouseLimit = Math.max(160000000, isan*0.5);
+    const spouseLimit = Math.max(160000000, isan * spouseTax.share);
     const spouseActual = isan * spouseTax.share;
     if(spouseActual <= spouseLimit) spouseCredit = sozokuZeiTotal * spouseTax.share;
   }
@@ -266,7 +273,11 @@ function calculate(){
     </thead>
     <tbody>
       <tr class="section"><td colspan="5">▼ 課税遺産総額の計算</td></tr>
-      <tr><td>遺産総額</td><td colspan="4" style="text-align:right">${fmt(isan)}</td></tr>
+      <tr><td>遺産総額（入力値）</td><td colspan="4" style="text-align:right">${fmt(isanInput)}</td></tr>
+      ${hoken > 0 ? `<tr><td>死亡保険金（受取総額）</td><td colspan="4" style="text-align:right">${fmt(hoken)}</td></tr>
+      <tr><td>保険金 非課税限度額（500万×${sozokunin}人）</td><td colspan="4" style="text-align:right">▲${fmt(hokenHikazei)}</td></tr>
+      <tr><td>保険金 課税分</td><td colspan="4" style="text-align:right">${fmt(hokenKazei)}</td></tr>` : ''}
+      <tr><td>課税対象 遺産総額</td><td colspan="4" style="text-align:right">${fmt(isan)}</td></tr>
       <tr><td>基礎控除（3,000万＋600万×${sozokunin}人）</td><td colspan="4" style="text-align:right">▲${fmt(kiso)}</td></tr>
       <tr class="subtotal"><td>課税遺産総額</td><td colspan="4" style="text-align:right">${fmt(kazeiIsanTotal)}</td></tr>
       <tr class="section"><td colspan="5">▼ 相続税の計算（法定相続分で按分）</td></tr>

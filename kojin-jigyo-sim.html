@@ -234,9 +234,12 @@ function calculate() {
   // 国民健康保険（事業所得ベースで概算）
   const kokuho = calcKokuho(jigyoShotoku);
 
-  // 課税所得（所得税）
+  // 寄附金控除（ふるさと納税等）は寄附金-2,000円が控除対象
+  const furusatoKojo = Math.max(0, furusato - 2000);
+
+  // 課税所得（所得税）- 1,000円未満切捨て
   const kaseiShotoku = Math.max(0,
-    jigyoShotoku
+    Math.floor((jigyoShotoku
     - kokuho          // 国保控除
     - kokumin_nenkin  // 国民年金控除
     - kyosai          // 小規模共済
@@ -246,9 +249,10 @@ function calculate() {
     - seimei          // 生命保険
     - jishin          // 地震保険
     - iryou           // 医療費控除
-    - furusato        // 寄附金控除
+    - furusatoKojo    // 寄附金控除（寄附金-2,000円）
     - shougai         // 障害者控除
     - hitorioni       // ひとり親
+    ) / 1000) * 1000
   );
 
   // 所得税
@@ -259,7 +263,7 @@ function calculate() {
   // 住民税（課税所得は基礎控除43万）
   const kaseiJumin = Math.max(0,
     jigyoShotoku - kokuho - kokumin_nenkin - kyosai - 430000
-    - haigusha - fuyou * 330000 - seimei - jishin - iryou - furusato - shougai - hitorioni
+    - haigusha - fuyou * 330000 - seimei - jishin - iryou - furusatoKojo - shougai - hitorioni
   );
   const juminzei = Math.max(0, kaseiJumin * 0.10 - 2500) + 5000;
 
@@ -293,7 +297,7 @@ function calculate() {
       <tr><td>生命保険料控除</td><td>▲${fmt(seimei)}</td></tr>
       <tr><td>地震保険料控除</td><td>▲${fmt(jishin)}</td></tr>
       <tr><td>医療費控除</td><td>▲${fmt(iryou)}</td></tr>
-      <tr><td>寄附金控除（ふるさと納税等）</td><td>▲${fmt(furusato)}</td></tr>
+      <tr><td>寄附金控除（ふるさと納税等 − 2,000円）</td><td>▲${fmt(furusatoKojo)}</td></tr>
       <tr class="subtotal"><td>課税所得（所得税）</td><td>${fmt(kaseiShotoku)}</td></tr>
 
       <tr class="section"><td colspan="2">▼ 税額</td></tr>
@@ -315,10 +319,9 @@ function calculate() {
     '※ ふるさと納税：所得税は寄附金から2,000円を引いた額が控除対象（所得の40%上限）。住民税控除は別途計算。<br>' +
     '※ 実際の申告・納税は税理士にご確認ください。';
 
-  // 法人化連携ボタン
-  const jigyoShotoku = (parseFloat(document.getElementById('uriage').value)||0)
-                     - (parseFloat(document.getElementById('keihi').value)||0)
-                     - (parseFloat(document.getElementById('aokiro').value)||0);
+  // 法人化連携ボタン（青色控除なし・専従者なしの事業所得で連携）
+  const jigyoShotokuForHandoff = (parseFloat(document.getElementById('uriage').value)||0)
+                               - (parseFloat(document.getElementById('keihi').value)||0);
   let handoffEl = document.getElementById('kojin_handoff');
   if (!handoffEl) {
     handoffEl = document.createElement('div');
@@ -328,7 +331,7 @@ function calculate() {
   }
   handoffEl.innerHTML = `<span style="font-size:0.78rem;color:#666;">この数値で続けて計算 → </span>
     <button style="padding:7px 14px;border:none;border-radius:7px;font-size:0.8rem;font-weight:700;cursor:pointer;background:#1a3a5c;color:#fff;font-family:inherit;"
-      onclick="sendToTool('hojinka-sim.html',{kojin_profit:${jigyoShotoku}})">法人化シミュレーション</button>`;
+      onclick="sendToTool('hojinka-sim.html',{kojin_profit:${jigyoShotokuForHandoff}})">法人化シミュレーション</button>`;
 
   document.getElementById('resultCard').style.display = 'block';
   document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });

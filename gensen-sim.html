@@ -202,15 +202,15 @@ function calcKyuyo() {
   const shakai = parseFloat(document.getElementById('shakai').value) || 0;
   const fuyou  = parseInt(document.getElementById('fuyou').value)    || 0;
 
-  // 社保控除後の給与 → 年収換算
-  const kojogoKyuyo = kyuyo - shakai;
-  const nenKyuyo    = kojogoKyuyo * 12;
+  // 年収換算（給与所得控除は給与収入に対して適用）
+  const nenKyuyo    = kyuyo * 12;
+  const nenShakai   = shakai * 12;
 
   // 給与所得 = 年収 - 給与所得控除
   const nenShotoku  = Math.max(0, nenKyuyo - kyuyoKojo(nenKyuyo));
 
-  // 課税所得 = 給与所得 - 基礎控除(58万・令和7年以降) - 扶養控除(38万/人)
-  const kaseiShotoku = Math.max(0, nenShotoku - 580000 - fuyou * 380000);
+  // 課税所得 = 給与所得 - 社保控除 - 基礎控除(58万・令和7年以降) - 扶養控除(38万/人)
+  const kaseiShotoku = Math.max(0, nenShotoku - nenShakai - 580000 - fuyou * 380000);
 
   // 年税額（復興特別所得税含む）
   const nenZei = calcShotokuzei(kaseiShotoku) * 1.021;
@@ -226,11 +226,10 @@ function calcKyuyo() {
   document.getElementById('kyuyoDetail').innerHTML = `
     <tr><th>項目</th><th>金額</th></tr>
     <tr><td>月額給与</td><td>${fmt(kyuyo)}</td></tr>
-    <tr><td>社会保険料（月額）</td><td>▲${fmt(shakai)}</td></tr>
-    <tr><td>社保控除後 給与（月額）</td><td>${fmt(kojogoKyuyo)}</td></tr>
     <tr><td>年収換算（×12）</td><td>${fmt(nenKyuyo)}</td></tr>
     <tr><td>給与所得控除</td><td>▲${fmt(kyuyoKojo(nenKyuyo))}</td></tr>
     <tr><td>給与所得（年）</td><td>${fmt(nenShotoku)}</td></tr>
+    <tr><td>社会保険料控除（年）</td><td>▲${fmt(nenShakai)}</td></tr>
     <tr><td>基礎控除</td><td>▲${fmt(580000)}</td></tr>
     <tr><td>扶養控除（${fuyou}人 × 38万）</td><td>▲${fmt(fuyou * 380000)}</td></tr>
     <tr><td>課税所得（年）</td><td>${fmt(kaseiShotoku)}</td></tr>
@@ -280,7 +279,22 @@ const SHOYO_TABLE = [
   [716000,   20.42,  20.42,  20.42,  20.42,  20.42,  10.21],
   [767000,   20.42,  20.42,  20.42,  20.42,  20.42,  20.42],
   [822000,   20.42,  20.42,  20.42,  20.42,  20.42,  20.42],
-  [Infinity, 20.42,  20.42,  20.42,  20.42,  20.42,  20.42],
+  [882000,   23.483, 20.42,  20.42,  20.42,  20.42,  20.42],
+  [947000,   23.483, 23.483, 20.42,  20.42,  20.42,  20.42],
+  [1017000,  23.483, 23.483, 23.483, 20.42,  20.42,  20.42],
+  [1092000,  23.483, 23.483, 23.483, 23.483, 20.42,  20.42],
+  [1175000,  33.693, 23.483, 23.483, 23.483, 23.483, 20.42],
+  [1267000,  33.693, 33.693, 23.483, 23.483, 23.483, 23.483],
+  [1369000,  33.693, 33.693, 33.693, 33.693, 23.483, 23.483],
+  [1480000,  33.693, 33.693, 33.693, 33.693, 33.693, 33.693],
+  [1604000,  40.84,  33.693, 33.693, 33.693, 33.693, 33.693],
+  [1744000,  40.84,  40.84,  33.693, 33.693, 33.693, 33.693],
+  [1906000,  40.84,  40.84,  40.84,  40.84,  33.693, 33.693],
+  [2093000,  40.84,  40.84,  40.84,  40.84,  40.84,  40.84],
+  [2417000,  45.945, 40.84,  40.84,  40.84,  40.84,  40.84],
+  [2750000,  45.945, 45.945, 45.945, 40.84,  40.84,  40.84],
+  [3417000,  45.945, 45.945, 45.945, 45.945, 45.945, 45.945],
+  [Infinity, 45.945, 45.945, 45.945, 45.945, 45.945, 45.945],
 ];
 
 function calcShoyo() {

@@ -185,31 +185,32 @@
 <script>
 function fmt(n){return Math.round(n).toLocaleString('ja-JP')+'円';}
 
-// 定率法の係数（250%定率法）
+// 定率法の係数（200%定率法・H24.4.1以後取得）
+// r=償却率, h=改定償却率, h2=保証率（国税庁 減価償却資産の償却率等表）
 const TEIRITSU = {
-  2:{r:1.000,h:1.000,h2:0.500},
-  3:{r:0.667,h:0.334,h2:0.334},
-  4:{r:0.500,h:0.250,h2:0.250},
-  5:{r:0.400,h:0.200,h2:0.200},
-  6:{r:0.333,h:0.167,h2:0.167},
-  7:{r:0.286,h:0.143,h2:0.143},
-  8:{r:0.250,h:0.125,h2:0.125},
-  9:{r:0.222,h:0.112,h2:0.112},
-  10:{r:0.200,h:0.100,h2:0.100},
-  11:{r:0.182,h:0.091,h2:0.091},
-  12:{r:0.167,h:0.084,h2:0.084},
-  13:{r:0.154,h:0.077,h2:0.077},
-  14:{r:0.143,h:0.072,h2:0.072},
-  15:{r:0.133,h:0.067,h2:0.067},
-  16:{r:0.125,h:0.063,h2:0.063},
-  17:{r:0.118,h:0.059,h2:0.059},
-  18:{r:0.111,h:0.056,h2:0.056},
-  19:{r:0.105,h:0.053,h2:0.053},
-  20:{r:0.100,h:0.050,h2:0.050},
+  2:{r:1.000,h:0,    h2:0},
+  3:{r:0.667,h:1.000,h2:0.11089},
+  4:{r:0.500,h:1.000,h2:0.12499},
+  5:{r:0.400,h:0.500,h2:0.10800},
+  6:{r:0.333,h:0.334,h2:0.09911},
+  7:{r:0.286,h:0.334,h2:0.08680},
+  8:{r:0.250,h:0.334,h2:0.07909},
+  9:{r:0.222,h:0.250,h2:0.07126},
+  10:{r:0.200,h:0.250,h2:0.06552},
+  11:{r:0.182,h:0.200,h2:0.05992},
+  12:{r:0.167,h:0.200,h2:0.05566},
+  13:{r:0.154,h:0.167,h2:0.05180},
+  14:{r:0.143,h:0.167,h2:0.04854},
+  15:{r:0.133,h:0.143,h2:0.04565},
+  16:{r:0.125,h:0.143,h2:0.04294},
+  17:{r:0.118,h:0.125,h2:0.04038},
+  18:{r:0.111,h:0.112,h2:0.03884},
+  19:{r:0.105,h:0.112,h2:0.03693},
+  20:{r:0.100,h:0.112,h2:0.03486},
 };
 function getTeiritsuRate(n) {
   if(TEIRITSU[n]) return TEIRITSU[n];
-  const r=parseFloat((1/n*2.5).toFixed(3));
+  const r=parseFloat((1/n*2.0).toFixed(3));
   return {r,h:parseFloat((1/n).toFixed(3)),h2:parseFloat((1/n).toFixed(3))};
 }
 
@@ -275,20 +276,21 @@ function calculate() {
       rows.push({y, dep, book});
     }
   } else {
-    // 定率法（250%）
+    // 定率法（200%定率法）
     const {r, h, h2} = getTeiritsuRate(taiyo);
-    const hosho = Math.floor(shutoku * h2); // 保証額（簡易）
+    const hosho = Math.floor(shutoku * h2); // 償却保証額
     let book = shutoku;
     let switched = false;
+    let kaiteiBook = 0; // 切替時の期首帳簿価額
     for(let y=1; book > 1 && y <= taiyo + 5; y++) {
       const ratio = y === 1 ? initRatio : 1.0;
       let dep;
       if(!switched) {
         dep = Math.floor(book * r * ratio);
-        if(dep < hosho * ratio) { switched = true; }
+        if(dep < hosho) { switched = true; kaiteiBook = book; }
       }
       if(switched) {
-        dep = Math.floor(book * h * ratio); // 改定償却率
+        dep = Math.floor(kaiteiBook * h * ratio); // 改定償却率 × 切替時帳簿価額
       }
       if(dep <= 0 || book - dep < 1) { dep = book - 1; book = 1; totalDep += dep; rows.push({y, dep, book}); break; }
       book -= dep;
