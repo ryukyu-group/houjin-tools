@@ -96,11 +96,11 @@
     <div class="info-box">国民年金・国民健康保険は自動計算されます。その他の控除を入力してください。</div>
     <div class="grid3">
       <div class="input-group">
-        <label>配偶者控除（0 or 38万・48万）</label>
+        <label>配偶者控除</label>
         <select id="haigusha">
           <option value="0">なし</option>
-          <option value="380000" selected>配偶者控除（38万）</option>
-          <option value="480000">老人配偶者控除（48万）</option>
+          <option value="futu" selected>配偶者控除（一般）</option>
+          <option value="roujin">老人配偶者控除（70歳以上）</option>
         </select>
       </div>
       <div class="input-group">
@@ -231,7 +231,23 @@ function calculate() {
   const keihi       = parseFloat(document.getElementById('keihi').value)       || 0;
   const aokiro      = parseFloat(document.getElementById('aokiro').value)      || 0;
   const senjusha    = parseFloat(document.getElementById('senjusha').value)    || 0;
-  const haigusha    = parseFloat(document.getElementById('haigusha').value)    || 0;
+  const haigushaType = document.getElementById('haigusha').value;
+
+  // 配偶者控除：本人の合計所得（≒事業所得）に応じた4段階
+  function calcHaigushaKojo(shotoku, isJumin) {
+    if (haigushaType === '0') return 0;
+    if (shotoku > 10000000) return 0;
+    const isRoujin = (haigushaType === 'roujin');
+    if (isJumin) {
+      if (shotoku <= 9000000) return isRoujin ? 380000 : 330000;
+      if (shotoku <= 9500000) return isRoujin ? 260000 : 220000;
+      return isRoujin ? 130000 : 110000;
+    } else {
+      if (shotoku <= 9000000) return isRoujin ? 480000 : 380000;
+      if (shotoku <= 9500000) return isRoujin ? 320000 : 260000;
+      return isRoujin ? 160000 : 130000;
+    }
+  }
   const fuyou             = parseInt(document.getElementById('fuyou').value)             || 0;
   const fuyouTokutei      = parseInt(document.getElementById('fuyouTokutei').value)      || 0;
   const fuyouRoujin       = parseInt(document.getElementById('fuyouRoujin').value)       || 0;
@@ -265,6 +281,10 @@ function calculate() {
   // 寄附金控除（ふるさと納税等）は寄附金-2,000円が控除対象
   const furusatoKojo = Math.max(0, furusato - 2000);
 
+  // 配偶者控除額（所得税・住民税それぞれ算出）
+  const haigushaKojo      = calcHaigushaKojo(jigyoShotoku, false);
+  const haigushaKojoJumin = calcHaigushaKojo(jigyoShotoku, true);
+
   // 課税所得（所得税）- 1,000円未満切捨て
   const kaseiShotoku = Math.max(0,
     Math.floor((jigyoShotoku
@@ -272,7 +292,7 @@ function calculate() {
     - kokumin_nenkin  // 国民年金控除
     - kyosai          // 小規模共済
     - 580000          // 基礎控除（令和7年以降58万円）
-    - haigusha                   // 配偶者控除
+    - haigushaKojo               // 配偶者控除（所得税）
     - fuyou * 380000             // 扶養控除（一般）
     - fuyouTokutei * 630000      // 特定扶養控除（19〜22歳）
     - fuyouRoujin * 480000       // 老人扶養控除
@@ -294,7 +314,7 @@ function calculate() {
   // 住民税（課税所得は基礎控除43万）
   const kaseiJumin = Math.max(0,
     jigyoShotoku - kokuho - kokumin_nenkin - kyosai - 430000
-    - haigusha - fuyou * 330000              // 住民税の一般扶養：33万
+    - haigushaKojoJumin - fuyou * 330000     // 住民税の一般扶養：33万
     - fuyouTokutei * 450000                  // 住民税の特定扶養：45万
     - fuyouRoujin * 380000                   // 住民税の老人扶養：38万
     - fuyouRoujinDokyo * 450000              // 住民税の同居老親：45万
@@ -327,7 +347,7 @@ function calculate() {
       <tr><td>国民年金保険料</td><td>▲${fmt(kokumin_nenkin)}</td></tr>
       <tr><td>小規模企業共済等掛金</td><td>▲${fmt(kyosai)}</td></tr>
       <tr><td>基礎控除</td><td>▲${fmt(580000)}</td></tr>
-      <tr><td>配偶者控除</td><td>▲${fmt(haigusha)}</td></tr>
+      ${haigushaKojo > 0 ? `<tr><td>配偶者控除（${haigushaType === 'roujin' ? '老人配偶者' : '一般'}）</td><td>▲${fmt(haigushaKojo)}</td></tr>` : ''}
       <tr><td>扶養控除 一般（${fuyou}人）</td><td>▲${fmt(fuyou * 380000)}</td></tr>
       ${fuyouTokutei > 0 ? `<tr><td>特定扶養控除（${fuyouTokutei}人）</td><td>▲${fmt(fuyouTokutei * 630000)}</td></tr>` : ''}
       ${fuyouRoujin > 0 ? `<tr><td>老人扶養控除（${fuyouRoujin}人）</td><td>▲${fmt(fuyouRoujin * 480000)}</td></tr>` : ''}
