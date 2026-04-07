@@ -94,6 +94,15 @@
         <select id="todofuken"></select>
       </div>
     </div>
+    <div class="grid2" style="margin-top:14px">
+      <div class="input-group">
+        <label>代表者の年齢区分（健康保険・介護料率）</label>
+        <select id="ageIns">
+          <option value="young" selected>40歳未満（介護保険なし）</option>
+          <option value="kaigo">40〜64歳（介護保険あり）</option>
+        </select>
+      </div>
+    </div>
     <div class="info-box">
       個人事業主は青色申告特別控除65万円を適用。社会保険は法人のみ加入（健保+年金）。<br>
       個人事業主の国民健康保険は所得に応じて概算（東京都基準）。
@@ -123,6 +132,43 @@ const PREF_DATA = {
 const PREF_DEFAULT = { jigyoSmall:STD, jigyoLarge:STD, juminRate:0.070, juminRateHigh:0.070, juminThreshold:0, kintou:[70000,180000] };
 function getPrefData(p) { return PREF_DATA[p] || PREF_DEFAULT; }
 
+// ── 標準報酬月額 等級テーブル ──────────────────────────────────
+// 協会けんぽ 健康保険 50等級表（令和7年度）[等級, 標準報酬月額, 下限報酬月額]
+const KENPO_GRADES = [
+  [1,58000,0],[2,68000,63000],[3,78000,73000],[4,88000,83000],[5,98000,93000],
+  [6,104000,101000],[7,110000,107000],[8,118000,114000],[9,126000,122000],[10,134000,130000],
+  [11,142000,138000],[12,150000,146000],[13,160000,155000],[14,170000,165000],[15,180000,175000],
+  [16,190000,185000],[17,200000,195000],[18,220000,210000],[19,240000,230000],[20,260000,250000],
+  [21,280000,270000],[22,300000,290000],[23,320000,310000],[24,340000,330000],[25,360000,350000],
+  [26,380000,370000],[27,410000,395000],[28,440000,425000],[29,470000,455000],[30,500000,485000],
+  [31,530000,515000],[32,560000,545000],[33,590000,575000],[34,620000,605000],[35,650000,635000],
+  [36,680000,665000],[37,710000,695000],[38,750000,730000],[39,790000,770000],[40,830000,810000],
+  [41,880000,855000],[42,930000,905000],[43,980000,955000],[44,1030000,1005000],[45,1090000,1055000],
+  [46,1150000,1115000],[47,1210000,1175000],[48,1270000,1235000],[49,1330000,1295000],[50,1390000,1355000],
+];
+// 厚生年金 32等級表（令和7年度）[等級, 標準報酬月額, 下限報酬月額]
+const NENKIN_GRADES = [
+  [1,88000,0],[2,98000,93000],[3,104000,101000],[4,110000,107000],[5,118000,114000],
+  [6,126000,122000],[7,134000,130000],[8,142000,138000],[9,150000,146000],[10,160000,155000],
+  [11,170000,165000],[12,180000,175000],[13,190000,185000],[14,200000,195000],[15,220000,210000],
+  [16,240000,230000],[17,260000,250000],[18,280000,270000],[19,300000,290000],[20,320000,310000],
+  [21,340000,330000],[22,360000,350000],[23,380000,370000],[24,410000,395000],[25,440000,425000],
+  [26,470000,455000],[27,500000,485000],[28,530000,515000],[29,560000,545000],[30,590000,575000],
+  [31,620000,605000],[32,650000,635000],
+];
+function getKenpoGrade(hoshu) {
+  for (let i = KENPO_GRADES.length - 1; i >= 0; i--) {
+    if (hoshu >= KENPO_GRADES[i][2]) return { grade: KENPO_GRADES[i][0], hyojun: KENPO_GRADES[i][1] };
+  }
+  return { grade: 1, hyojun: 58000 };
+}
+function getNenkinGrade(hoshu) {
+  for (let i = NENKIN_GRADES.length - 1; i >= 0; i--) {
+    if (hoshu >= NENKIN_GRADES[i][2]) return { grade: NENKIN_GRADES[i][0], hyojun: NENKIN_GRADES[i][1] };
+  }
+  return { grade: 1, hyojun: 88000 };
+}
+
 function fmt(n) { return Math.round(n).toLocaleString('ja-JP') + '円'; }
 
 // 給与所得控除（令和7年以降）
@@ -142,11 +188,15 @@ function calcShotokuzei(taxable) {
   return 0;
 }
 
-// 社会保険料（本人負担・2025年度 協会けんぽ東京）
-function calcSocialIns(annualSalary) {
-  const kenpo  = Math.min(Math.max(annualSalary * 0.0575, 40500), 958200);
-  const nenkin = Math.min(Math.max(annualSalary * 0.0915, 96624), 713700);
-  return kenpo + nenkin;
+// 社会保険料（本人負担・協会けんぽ東京 令和7年度）等級テーブル方式
+function calcSocialIns(annualSalary, isKaigo) {
+  const monthly   = annualSalary / 12;
+  const kenpoH    = getKenpoGrade(monthly).hyojun;
+  const nenkinH   = getNenkinGrade(monthly).hyojun;
+  const kenpoRate = isKaigo ? 0.1150 : 0.0991; // 東京 令和7年度（40歳以上/未満）
+  const kenpoAnnual  = Math.round(kenpoH * kenpoRate / 2) * 12;
+  const nenkinAnnual = Math.round(nenkinH * 0.0915) * 12;
+  return kenpoAnnual + nenkinAnnual;
 }
 
 // 国民健康保険料（概算：東京都 2024年度）
@@ -189,6 +239,7 @@ function calculate() {
   const yakuinHoshu = parseFloat(document.getElementById('yakuinHoshu').value) || 0;
   const shihonkin  = document.getElementById('shihonkin').value;
   const pref       = document.getElementById('todofuken').value;
+  const isKaigo    = document.getElementById('ageIns').value === 'kaigo';
 
   // ── 個人事業主 ─────────────────────────────────────────────
   // 所得 = 事業所得 - 専従者給与 - 青色申告特別控除65万
@@ -221,14 +272,14 @@ function calculate() {
   const kojinTotal = shotokuzeiKojin + fukkoKojin + juminzeiKojin + kokuho + nenkinKojin + jigyozeiKojin + haiguhaTax;
 
   // ── 法人 ──────────────────────────────────────────────────
-  const empIns = calcSocialIns(yakuinHoshu); // 雇用主負担（≒個人負担）
-  const haigushaEmpIns = calcSocialIns(haigusha);
+  const empIns = calcSocialIns(yakuinHoshu, isKaigo); // 雇用主負担（≒個人負担）
+  const haigushaEmpIns = calcSocialIns(haigusha, isKaigo);
   const houjinIncome = Math.max(0, shotoku - yakuinHoshu - haigusha - empIns - haigushaEmpIns);
   const corp = calcCorpTax(houjinIncome, shihonkin, pref);
 
   // 代表者個人（役員報酬）
   const kyuyoShotoku = Math.max(0, yakuinHoshu - kyuyoKojo(yakuinHoshu));
-  const socialInsRep = calcSocialIns(yakuinHoshu);
+  const socialInsRep = calcSocialIns(yakuinHoshu, isKaigo);
   const kaseiRep = Math.max(0, kyuyoShotoku - socialInsRep - 580000);
   const shotokuzeiRep = calcShotokuzei(kaseiRep);
   const fukkoRep = shotokuzeiRep * 0.021;
@@ -237,7 +288,7 @@ function calculate() {
 
   // 配偶者（法人役員報酬扱い）
   const haiguhaGK2 = Math.max(0, haigusha - kyuyoKojo(haigusha));
-  const socialInsHaigusha = calcSocialIns(haigusha);
+  const socialInsHaigusha = calcSocialIns(haigusha, isKaigo);
   const kaseiHaigusha = Math.max(0, haiguhaGK2 - socialInsHaigusha - 580000);
   const haigusha2Tax = calcShotokuzei(kaseiHaigusha) * 1.021
                      + Math.max(0, (Math.max(0, haiguhaGK2 - socialInsHaigusha - 430000)) * 0.10 - 2500) + 5000
@@ -306,7 +357,7 @@ function calculate() {
 
   document.getElementById('resultNote').innerHTML =
     '※ 個人：青色申告特別控除65万円、基礎控除58万円（令和7年以降）、国保（東京都概算）、国民年金月17,510円（2025年度）を適用。<br>' +
-    '※ 法人：社会保険は協会けんぽ（東京）2025年度40歳以上。健保5.75%＋年金9.15%（本人・雇用主各）。<br>' +
+    '※ 法人：社会保険は協会けんぽ（東京）令和7年度。健保50等級テーブル（58,000〜1,390,000円）・厚生年金32等級テーブルで標準報酬月額を決定。介護保険料は代表者の年齢区分に応じて加減算。<br>' +
     '※ 法人設立費用（登記費用等）は含みません。消費税・相続税は考慮していません。<br>' +
     '※ 実際の判断は税理士・社労士にご相談ください。';
 

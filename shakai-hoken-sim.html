@@ -127,7 +127,7 @@
     <table class="dt" id="detailTable"></table>
     <div class="warn-box" id="noteBox" style="display:none"></div>
     <p class="note">
-      ※ 協会けんぽ 東京都 2024年度料率：健保9.98%（40歳未満）/ 11.58%（40歳以上、介護1.60%含む）。<br>
+      ※ 協会けんぽ 令和7年度料率（東京都）：健保9.91%（40歳未満）/ 11.50%（40歳以上、介護1.59%含む）。健保は50等級テーブル（58,000〜1,390,000円）を適用。<br>
       ※ 厚生年金保険料率：18.3%（本人・会社各9.15%）。標準報酬月額の上限 650,000円。<br>
       ※ 実際の保険料は日本年金機構・全国健康保険協会にご確認ください。
     </p>
@@ -160,18 +160,33 @@ const NENKIN_GRADES = [
   [31,620000,'605,000〜635,000'], [32,650000,'635,000〜'],
 ];
 
-// 健保等級（上限1,390,000）は厚生年金と同等上位まで
+// 協会けんぽ 健康保険 50等級表（令和7年度）[等級, 標準報酬月額, 下限報酬月額]
+const KENPO_GRADES = [
+  [1,58000,0],[2,68000,63000],[3,78000,73000],[4,88000,83000],[5,98000,93000],
+  [6,104000,101000],[7,110000,107000],[8,118000,114000],[9,126000,122000],[10,134000,130000],
+  [11,142000,138000],[12,150000,146000],[13,160000,155000],[14,170000,165000],[15,180000,175000],
+  [16,190000,185000],[17,200000,195000],[18,220000,210000],[19,240000,230000],[20,260000,250000],
+  [21,280000,270000],[22,300000,290000],[23,320000,310000],[24,340000,330000],[25,360000,350000],
+  [26,380000,370000],[27,410000,395000],[28,440000,425000],[29,470000,455000],[30,500000,485000],
+  [31,530000,515000],[32,560000,545000],[33,590000,575000],[34,620000,605000],[35,650000,635000],
+  [36,680000,665000],[37,710000,695000],[38,750000,730000],[39,790000,770000],[40,830000,810000],
+  [41,880000,855000],[42,930000,905000],[43,980000,955000],[44,1030000,1005000],[45,1090000,1055000],
+  [46,1150000,1115000],[47,1210000,1175000],[48,1270000,1235000],[49,1330000,1295000],[50,1390000,1355000],
+];
+
+function getKenpoGrade(hoshu) {
+  for (let i = KENPO_GRADES.length - 1; i >= 0; i--) {
+    if (hoshu >= KENPO_GRADES[i][2]) return { grade: KENPO_GRADES[i][0], hyojun: KENPO_GRADES[i][1] };
+  }
+  return { grade: 1, hyojun: 58000 };
+}
+
 function getNenkinGrade(hoshu) {
   for(const [g,s,r] of NENKIN_GRADES) {
     const next = NENKIN_GRADES[NENKIN_GRADES.indexOf(NENKIN_GRADES.find(x=>x[0]===g))+1];
     if(!next || hoshu < next[1]) return {grade:g, hyojun:s, range:r};
   }
   return {grade:32, hyojun:650000, range:'635,000〜'};
-}
-
-function getKenpoHyojun(hoshu) {
-  // 健保は上限1,390,000まで（等級50）。ここではざっくり報酬月額そのまま（上限だけ適用）
-  return Math.min(hoshu, 1390000);
 }
 
 // 協会けんぽ 令和7年3月分（2025年4月納付）以降の料率
@@ -217,9 +232,9 @@ function calculate(){
     hoshu = Math.round((m1+m2+m3)/3);
   }
 
-  // 標準報酬月額（厚生年金ベース）
+  // 標準報酬月額（等級テーブル）
   const {grade, hyojun} = getNenkinGrade(hoshu);
-  const kenpoHyojun = Math.min(hoshu, 1390000); // 健保は実際はより細かい等級
+  const {grade: kenpoGrade, hyojun: kenpoHyojun} = getKenpoGrade(hoshu);
 
   // 保険料
   const kenpoKojin = Math.round(kenpoHyojun * kenpoRate / 2);
@@ -231,7 +246,7 @@ function calculate(){
   const totalBoth   = totalKojin + totalHojin;
 
   document.getElementById('kpiRow').innerHTML=`
-    <div class="kpi blue"><label>標準報酬月額（厚生年金）</label><div class="val">${fmt(hyojun)}</div><div style="font-size:0.72rem;color:#888">第${grade}等級</div></div>
+    <div class="kpi blue"><label>標準報酬月額（健保 第${kenpoGrade}等級 / 年金 第${grade}等級）</label><div class="val">${fmt(kenpoHyojun)}</div><div style="font-size:0.72rem;color:#888">厚生年金標準 ${fmt(hyojun)}</div></div>
     <div class="kpi red"><label>本人負担 合計</label><div class="val">${fmt(totalKojin)}/月</div><div style="font-size:0.72rem;color:#888">年額 ${fmt(totalKojin*12)}</div></div>
     <div class="kpi green"><label>会社負担 合計</label><div class="val">${fmt(totalHojin)}/月</div><div style="font-size:0.72rem;color:#888">年額 ${fmt(totalHojin*12)}</div></div>`;
 
