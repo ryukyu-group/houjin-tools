@@ -298,9 +298,21 @@ function calculate() {
   const haigushaType = document.getElementById('haigusha').value;
   const haigushaKojoAmt = haigushaKojo(haigushaType, totalShotoku);
 
-  // 基礎控除（令和7年以降58万円、令和6年以前48万円）
-  const kisoLimit = isR7 ? 580000 : 480000;
-  const kiso = totalShotoku <= 24000000 ? kisoLimit : 0;
+  // 基礎控除（4段階逓減）
+  function calcKiso(totalShotoku, isR7) {
+    if (isR7) {
+      if (totalShotoku <= 24000000) return 580000;
+      if (totalShotoku <= 24500000) return 360000;
+      if (totalShotoku <= 25000000) return 180000;
+      return 0;
+    } else {
+      if (totalShotoku <= 24000000) return 480000;
+      if (totalShotoku <= 24500000) return 320000;
+      if (totalShotoku <= 25000000) return 160000;
+      return 0;
+    }
+  }
+  const kiso = calcKiso(totalShotoku, isR7);
 
   // 寄付金控除
   const kifuKojo = Math.max(kifu - 2000, 0);
@@ -318,9 +330,9 @@ function calculate() {
   // 住宅ローン控除（税額控除）
   shotokuZei = Math.max(shotokuZei - jutaku, 0);
 
-  // 定額減税（令和6年分のみ・本人+扶養1人につき所得税3万円）
+  // 定額減税（令和6年分のみ・本人+扶養1人につき所得税3万円・合計所得1,805万円超は対象外）
   let teigaku = 0;
-  if (!isR7) {
+  if (!isR7 && totalShotoku <= 18050000) {
     const nin = parseInt(document.getElementById('teigaku_nin').value) || 1;
     teigaku = Math.min(30000 * nin, shotokuZei);
     shotokuZei = Math.max(shotokuZei - teigaku, 0);
