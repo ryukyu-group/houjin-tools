@@ -243,7 +243,7 @@
           <option value="群馬県">群馬県</option>
           <option value="埼玉県">埼玉県</option>
           <option value="千葉県">千葉県</option>
-          <option value="東京都" selected>東京都</option>
+          <option value="東京都">東京都</option>
           <option value="神奈川県">神奈川県</option>
           <option value="新潟県">新潟県</option>
           <option value="富山県">富山県</option>
@@ -277,7 +277,7 @@
           <option value="大分県">大分県</option>
           <option value="宮崎県">宮崎県</option>
           <option value="鹿児島県">鹿児島県</option>
-          <option value="沖縄県">沖縄県</option>
+          <option value="沖縄県" selected>沖縄県</option>
         </select>
       </div>
             <div class="input-group">
@@ -348,13 +348,14 @@
     </div>
 
     <div class="note">
-      ※ 本シミュレーションは参考値です。中小法人（普通法人）を前提とした簡易計算であり、実際の税額とは異なる場合があります。<br>
+      ※ 本シミュレーションは参考値（2025年度／令和7年度 基準）です。中小法人（普通法人・資本金1億円以下）を前提とした簡易計算であり、実際の税額とは異なる場合があります。<br>
       ※ 法人税：課税所得800万円以下15%、超過部分23.2%。地方法人税：法人税額×10.3%。特別法人事業税：標準税率ベース事業税×37%（国税のため全国共通）。<br>
-      ※ 法人事業税（所得割）：東京都・大阪府は超過税率（1億円以下（1,000万超）3.75% / 5.665% / 7.48%）、その他は標準税率（3.5% / 5.3% / 7.0%）。<br>
-      ※ 法人住民税 法人税割：東京都は法人税額1,000万円以下→7.0%・超→10.4%。他は7.0%（標準）。均等割：資本金1,000万以下→7万円・1億以下→18万円（いずれも従業員50人以下の場合。50人超は金額が異なります）。<br>
-      ※ 実効税率は「法人税等合計 ÷ 税引前当期純利益」の簡易計算です。事業税の損金算入効果を考慮した一般的な法定実効税率とは異なります。<br>
-      ※ 東京都・大阪府以外は標準税率で計算しています。神奈川県・愛知県など超過課税を適用している都道府県は実際の税率と異なる場合があります。<br>
-      ※ 市区町村によって税率が異なる場合があります。参考値としてご活用ください。実際の納税額は税理士等の専門家にご確認ください。
+      ※ 法人事業税（所得割）超過税率の主な適用県：東京都・大阪府（3.75%/5.665%/7.48%）、京都府・愛知県（3.675%/5.565%/7.35%）、神奈川県（3.665%/5.465%/7.18%）。その他は標準税率（3.5%/5.3%/7.0%）で計算。沖縄県は標準税率。<br>
+      ※ 法人住民税 法人税割：東京都23区は法人税額1,000万円以下→7.0%・超→10.4%（超過）。その他は標準7.0%（県民税1.0%＋市町村民税6.0%）。市区町村の条例により実際は異なる場合があります。<br>
+      ※ 均等割：資本金1,000万以下→7万円・1億以下→18万円（従業員50人以下の場合。50人超は金額が異なります）。<br>
+      ※ 「負担率」＝法人税等合計÷税引前利益（単純合計）。「法定実効税率」＝事業税・特別法人事業税の翌期損金算入を考慮した理論値（課税所得800万円超の最高税率ベース）。<br>
+      ※ 税率は条例改正で毎年変わり得ます。最新税率は各都道府県・市区町村のHPでご確認のうえ、実際の納税額は税理士等の専門家にご相談ください。<br>
+      ※ 本シミュレーションは中小法人の所得割中心の計算です。外形標準課税（資本金1億円超）・留保金課税・賃上げ促進税制・研究開発税制等は未実装です。
     </div>
   </div>
 
@@ -370,18 +371,25 @@ function pct(n) {
   return (n * 100).toFixed(1) + ' %';
 }
 
-// ── 都道府県別 税率データ ──
+// ── 都道府県別 税率データ（2025年度 令和7年度 基準・主要都道府県のみ） ──
+// ※ 税率は条例改正で毎年変わり得ます。最新税率は必ず各都道府県HPでご確認ください。
 // jigyoSmall: 資本金1,000万以下の事業税率 [400万以下, 400-800万, 800万超]
 // jigyoLarge: 資本金1億以下(1,000万超)の事業税率
-// juminRate:     法人税割（法人税額が閾値以下）
-// juminRateHigh: 法人税割（法人税額が閾値超）
+// juminRate:     法人住民税法人税割（法人税額が閾値以下）※都道府県民税+市町村民税の標準合算
+// juminRateHigh: 法人住民税法人税割（法人税額が閾値超）
 // juminThreshold: 切替閾値（0=切替なし）
-// kintou: 均等割 [1,000万以下, 1億以下]
-const STD  = [0.035, 0.053, 0.070]; // 標準税率
-const CHOKA = [0.0375, 0.05665, 0.0748]; // 超過税率（東京・大阪等）
+// kintou: 均等割 [1,000万以下, 1億以下] ※従業員50人以下前提
+const STD      = [0.035,   0.053,   0.070 ]; // 標準税率
+const CHOKA_TK = [0.0375,  0.05665, 0.0748]; // 東京・大阪
+const CHOKA_KN = [0.03665, 0.05465, 0.0718]; // 神奈川
+const CHOKA_OT = [0.03675, 0.05565, 0.0735]; // 京都・愛知ほか
 const PREF_DATA = {
-  '東京都': { jigyoSmall:STD, jigyoLarge:CHOKA, juminRate:0.070, juminRateHigh:0.104, juminThreshold:10000000, kintou:[70000,180000] },
-  '大阪府': { jigyoSmall:STD, jigyoLarge:CHOKA, juminRate:0.070, juminRateHigh:0.070, juminThreshold:0,        kintou:[70000,180000] },
+  '東京都':   { jigyoSmall:STD, jigyoLarge:CHOKA_TK, juminRate:0.070, juminRateHigh:0.104, juminThreshold:10000000, kintou:[70000,180000] },
+  '大阪府':   { jigyoSmall:STD, jigyoLarge:CHOKA_TK, juminRate:0.070, juminRateHigh:0.070, juminThreshold:0,        kintou:[70000,180000] },
+  '京都府':   { jigyoSmall:STD, jigyoLarge:CHOKA_OT, juminRate:0.070, juminRateHigh:0.070, juminThreshold:0,        kintou:[70000,180000] },
+  '神奈川県': { jigyoSmall:STD, jigyoLarge:CHOKA_KN, juminRate:0.070, juminRateHigh:0.070, juminThreshold:0,        kintou:[70000,180000] },
+  '愛知県':   { jigyoSmall:STD, jigyoLarge:CHOKA_OT, juminRate:0.070, juminRateHigh:0.070, juminThreshold:0,        kintou:[70000,180000] },
+  '沖縄県':   { jigyoSmall:STD, jigyoLarge:STD,      juminRate:0.070, juminRateHigh:0.070, juminThreshold:0,        kintou:[70000,180000] },
 };
 // その他の道府県はデフォルト（標準税率）
 const PREF_DEFAULT = { jigyoSmall:STD, jigyoLarge:STD, juminRate:0.070, juminRateHigh:0.070, juminThreshold:0, kintou:[70000,180000] };
@@ -446,8 +454,21 @@ function calcTax(profit, kurikoshi, shihonkin, pref) {
   const total = houjinzei + chihouHoujinzei + jigyozei + tokubetuJigyozei + juminzei;
   result.total = total;
 
-  // 実効税率（法人税等合計 ÷ 税引前当期純利益）
-  result.effectiveRate = (profit > 0) ? total / profit : null;
+  // 負担率（法人税等合計 ÷ 税引前当期純利益）= 表面的な実負担割合
+  result.burdenRate = (profit > 0) ? total / profit : null;
+
+  // 法定実効税率（参考）: 事業税・特別法人事業税の損金算入を考慮した理論値
+  // 最高税率ベース（所得800万超部分）で算出
+  //   = {法人税率×(1+地方法人税率+住民税率) + 事業税率 + 特別法人事業税率(=事業税標準×37%)}
+  //     / (1 + 事業税率 + 事業税標準×37%)
+  const houjinTop = 0.232;
+  const chihouTop = 0.103;
+  const juminRateForEffective = (pd.juminThreshold > 0) ? pd.juminRateHigh : pd.juminRate;
+  const jigyoTop = (shihonkin === 'senman') ? pd.jigyoSmall[2] : pd.jigyoLarge[2];
+  const tokubetuOnStd = STD[2] * 0.37;
+  const numer = houjinTop * (1 + chihouTop + juminRateForEffective) + jigyoTop + tokubetuOnStd;
+  const denom = 1 + jigyoTop + tokubetuOnStd;
+  result.effectiveRate = numer / denom;
 
   // 税引後利益
   result.afterTaxProfit = profit - total;
@@ -475,7 +496,8 @@ function calculate() {
     { label: '法人住民税（法人税割）', key: 'juminzeiHoujinzeiWari' },
     { label: '法人住民税（均等割）', key: 'kintouWari' },
     { label: '法人税等 合計', key: 'total', cls: 'total' },
-    { label: '法人税等 実効税率', key: 'effectiveRate', cls: 'rate', fmt: pct },
+    { label: '負担率（法人税等÷税引前利益）', key: 'burdenRate', cls: 'rate', fmt: pct },
+    { label: '法定実効税率（参考・最高税率ベース）', key: 'effectiveRate', cls: 'rate', fmt: pct },
     { label: '税引後利益', key: 'afterTaxProfit', cls: 'after' },
   ];
 
